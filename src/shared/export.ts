@@ -10,7 +10,7 @@ import { isTextAnnotation, isElementAnnotation, getAnnotationStatus } from './ty
 export function generateExport(store: ReviewStore): string {
   const now = new Date().toISOString().slice(0, 16).replace('T', ' ');
   const lines: string[] = [
-    '# Inline Review — Copy Annotations',
+    '# Review Loop — Copy Annotations',
     `Exported: ${now}`,
     '',
   ];

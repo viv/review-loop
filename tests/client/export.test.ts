@@ -15,7 +15,7 @@ describe('generateExport', () => {
   it('returns empty message when store has no data', () => {
     const result = generateExport(makeStore());
 
-    expect(result).toContain('# Inline Review');
+    expect(result).toContain('# Review Loop');
     expect(result).toContain('No annotations or notes yet');
   });
 

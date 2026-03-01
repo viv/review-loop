@@ -287,7 +287,7 @@ describe('middleware', () => {
 
       expect(res._status).toBe(200);
       expect(res._headers['Content-Type']).toBe('text/markdown; charset=utf-8');
-      expect(res._body).toContain('# Inline Review');
+      expect(res._body).toContain('# Review Loop');
       expect(res._body).toContain('## /');
       expect(res._body).toContain('## /about');
       expect(res._body).toContain('**"home text"**');

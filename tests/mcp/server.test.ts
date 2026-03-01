@@ -266,7 +266,7 @@ describe('MCP server integration', () => {
     const response = await client.callTool('get_export');
     const result = response.result as { content: Array<{ type: string; text: string }> };
 
-    expect(result.content[0].text).toContain('# Inline Review');
+    expect(result.content[0].text).toContain('# Review Loop');
     expect(result.content[0].text).toContain('Hello world');
     expect(result.content[0].text).toContain('Fix this typo');
   });

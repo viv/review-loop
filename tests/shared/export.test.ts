@@ -44,7 +44,7 @@ describe('generateExport', () => {
 
     const result = generateExport(store);
 
-    expect(result).toContain('# Inline Review');
+    expect(result).toContain('# Review Loop');
     expect(result).toContain('No annotations or notes yet.');
     expect(result).not.toContain('---');
   });

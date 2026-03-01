@@ -44,7 +44,7 @@ describe('get_export handler', () => {
     const result = await getExportHandler(storage);
 
     const text = result.content[0].text;
-    expect(text).toContain('# Inline Review');
+    expect(text).toContain('# Review Loop');
     expect(text).toContain('## / — Test Page');
     expect(text).toContain('## /about — Test Page');
     expect(text).toContain('**"hello"**');

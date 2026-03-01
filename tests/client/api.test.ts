@@ -65,12 +65,12 @@ describe('api', () => {
 
   it('getExport returns markdown text', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response('# Inline Review\nExported: 2026-02-20', { status: 200 }),
+      new Response('# Review Loop\nExported: 2026-02-20', { status: 200 }),
     );
 
     const result = await api.getExport();
 
-    expect(result).toContain('# Inline Review');
+    expect(result).toContain('# Review Loop');
   });
 
   it('updateAnnotation calls PATCH /annotations/:id', async () => {
