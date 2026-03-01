@@ -227,26 +227,6 @@ function init(): void {
       }
       return false;
     },
-    exportToClipboard: async () => {
-      // Always fetch from server — cache only has current page's annotations
-      const store = await api.getStore();
-      const success = await exportToClipboard(store);
-      showToast(shadowRoot, success ? 'Copied to clipboard!' : 'Export failed — try again');
-    },
-    addPageNote: async () => {
-      // Open panel and ensure content is loaded before adding the form.
-      // togglePanel fires mediator.refreshPanel() without awaiting it,
-      // so the async refresh would wipe the form by clearing children.
-      // Instead, open the panel manually and await the refresh.
-      if (!isPanelOpen(panel)) {
-        panel.container.classList.add('air-panel--open');
-        panel.container.setAttribute('data-air-state', 'open');
-        sessionStorage.setItem(PANEL_STATE_KEY, 'open');
-        openFab(fab);
-        await panel.mediator.refreshPanel();
-      }
-      panel.addNoteBtn.click();
-    },
   });
 
   // Save pending popup state before page unload (e.g. Vite HMR full reload)

@@ -128,8 +128,6 @@ export function createPanel(
   shortcutsFooter.setAttribute('data-air-el', 'shortcuts-help');
   shortcutsFooter.innerHTML = [
     `<kbd>${mod}+Shift+.</kbd> Toggle panel`,
-    `<kbd>${mod}+Shift+E</kbd> Export`,
-    `<kbd>${mod}+Shift+N</kbd> Add note`,
     `<kbd>Esc</kbd> Close`,
     `<kbd>Alt+hover</kbd> Inspect`,
   ].join(' &middot; ');

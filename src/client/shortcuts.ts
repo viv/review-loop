@@ -4,8 +4,6 @@
  * Shortcuts:
  * - Cmd/Ctrl + Shift + .   → Toggle panel
  * - Escape                  → Close panel / dismiss popup
- * - Cmd/Ctrl + Shift + E   → Export to clipboard
- * - Cmd/Ctrl + Shift + N   → Add page note
  *
  * Escape uses capture phase to take precedence over site handlers,
  * but only stops propagation when we actually handle it (panel/popup open).
@@ -17,8 +15,6 @@ export interface ShortcutHandlers {
   togglePanel: () => void;
   /** Returns true if something was closed (popup or panel), false otherwise. */
   closeActive: () => boolean;
-  exportToClipboard: () => void;
-  addPageNote: () => void;
 }
 
 let activeHandler: ((e: KeyboardEvent) => void) | null = null;
@@ -51,18 +47,6 @@ export function registerShortcuts(handlers: ShortcutHandlers): void {
       case '>': // Shift+. produces > on some layouts
         e.preventDefault();
         handlers.togglePanel();
-        break;
-
-      case 'E':
-      case 'e':
-        e.preventDefault();
-        handlers.exportToClipboard();
-        break;
-
-      case 'N':
-      case 'n':
-        e.preventDefault();
-        handlers.addPageNote();
         break;
     }
   };

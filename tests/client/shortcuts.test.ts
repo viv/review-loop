@@ -8,8 +8,6 @@ describe('registerShortcuts', () => {
     handlers = {
       togglePanel: vi.fn(),
       closeActive: vi.fn().mockReturnValue(false),
-      exportToClipboard: vi.fn(),
-      addPageNote: vi.fn(),
     };
   });
 
@@ -55,34 +53,6 @@ describe('registerShortcuts', () => {
     document.dispatchEvent(event);
 
     expect(handlers.closeActive).toHaveBeenCalledOnce();
-  });
-
-  it('calls exportToClipboard on Cmd+Shift+E', () => {
-    registerShortcuts(handlers);
-
-    const event = new KeyboardEvent('keydown', {
-      key: 'E',
-      shiftKey: true,
-      metaKey: true,
-      bubbles: true,
-    });
-    document.dispatchEvent(event);
-
-    expect(handlers.exportToClipboard).toHaveBeenCalledOnce();
-  });
-
-  it('calls addPageNote on Cmd+Shift+N', () => {
-    registerShortcuts(handlers);
-
-    const event = new KeyboardEvent('keydown', {
-      key: 'N',
-      shiftKey: true,
-      metaKey: true,
-      bubbles: true,
-    });
-    document.dispatchEvent(event);
-
-    expect(handlers.addPageNote).toHaveBeenCalledOnce();
   });
 
   it('does NOT fire when focus is in an input element', () => {

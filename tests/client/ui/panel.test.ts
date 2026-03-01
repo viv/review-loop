@@ -615,7 +615,6 @@ describe('createPanel — shortcuts help footer', () => {
     const footer = shadowRoot.querySelector('[data-air-el="shortcuts-help"]');
     const text = footer!.textContent!;
     expect(text).toContain('Toggle panel');
-    expect(text).toContain('Export');
     expect(text).toContain('Close');
     expect(text).toContain('Inspect');
   });
