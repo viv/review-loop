@@ -21,7 +21,7 @@ export default function inlineReviewVite(options: InlineReviewOptions = {}): Plu
   let clientJsPath: string;
 
   return {
-    name: 'inline-review',
+    name: 'review-loop',
     apply: 'serve',
 
     configureServer(server: ViteDevServer) {

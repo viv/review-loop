@@ -29,7 +29,7 @@ describe('Vite plugin adapter', () => {
   });
 
   it('has correct plugin name', () => {
-    expect(plugin.name).toBe('inline-review');
+    expect(plugin.name).toBe('review-loop');
   });
 
   it('applies only during dev (serve)', () => {
@@ -46,7 +46,7 @@ describe('Vite plugin adapter', () => {
 
   it('accepts custom storagePath option', () => {
     const custom = inlineReviewVite({ storagePath: '/tmp/custom.json' });
-    expect(custom.name).toBe('inline-review');
+    expect(custom.name).toBe('review-loop');
   });
 
   describe('configureServer', () => {
