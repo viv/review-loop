@@ -27,7 +27,7 @@ describe('createFab', () => {
 
   it('has title attribute', () => {
     const { button } = createFab(shadowRoot, vi.fn());
-    expect(button.getAttribute('title')).toBe('Inline Review');
+    expect(button.getAttribute('title')).toBe('Review Loop');
   });
 
   it('calls onToggle when clicked', () => {

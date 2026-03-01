@@ -766,7 +766,7 @@ describe('createPanel — ARIA semantics', () => {
 
     const panel = shadowRoot.querySelector('[data-air-el="panel"]');
     expect(panel!.getAttribute('role')).toBe('complementary');
-    expect(panel!.getAttribute('aria-label')).toBe('Inline Review Panel');
+    expect(panel!.getAttribute('aria-label')).toBe('Review Loop Panel');
   });
 
   it('tabs container has role="tablist"', () => {

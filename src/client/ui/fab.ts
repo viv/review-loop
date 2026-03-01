@@ -36,7 +36,7 @@ export function createFab(shadowRoot: ShadowRoot, onToggle: () => void): FabElem
   const button = document.createElement('button');
   button.className = 'air-fab';
   button.setAttribute('aria-label', 'Toggle inline review panel');
-  button.setAttribute('title', 'Inline Review');
+  button.setAttribute('title', 'Review Loop');
   button.setAttribute('data-air-el', 'fab');
   button.setAttribute('data-air-state', 'closed');
   button.appendChild(createSvgIcon(CLIPBOARD_PATH));

@@ -47,7 +47,7 @@ export function createPanel(
   container.setAttribute('data-air-el', 'panel');
   container.setAttribute('data-air-state', 'closed');
   container.setAttribute('role', 'complementary');
-  container.setAttribute('aria-label', 'Inline Review Panel');
+  container.setAttribute('aria-label', 'Review Loop Panel');
 
   // Header
   const header = document.createElement('div');
@@ -55,7 +55,7 @@ export function createPanel(
 
   const title = document.createElement('h2');
   title.className = 'air-panel__title';
-  title.textContent = 'Inline Review';
+  title.textContent = 'Review Loop';
   header.appendChild(title);
 
   const actions = document.createElement('div');
@@ -814,7 +814,7 @@ function setupClearAll(clearBtn: HTMLButtonElement, callbacks: PanelCallbacks, m
     if (!confirming) {
       // First click — enter confirmation state
       confirming = true;
-      clearBtn.textContent = 'Confirm Delete';
+      clearBtn.textContent = 'Sure?';
       clearBtn.setAttribute('data-air-state', 'confirming');
 
       // Auto-reset after 3 seconds if user doesn't confirm
