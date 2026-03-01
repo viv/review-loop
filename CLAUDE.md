@@ -59,11 +59,13 @@ This file is the source of truth. `ReviewStorage` reads from disk on every call 
 
 ### Reading annotations as an agent
 
-To read review annotations, parse `inline-review.json` from the project root. Each annotation has:
+Prefer the MCP tools (`list_annotations` → `start_work` → `finish_work`) over parsing the JSON file directly. The MCP server handles locking, status transitions, and timestamp management.
+
+If reading the file directly, each annotation has:
 
 - `pageUrl` — the route path (e.g., `/about`)
 - `note` — the reviewer's comment describing what to change
-- `type: "text"` — includes `selectedText` and `range` for locating the exact text; optionally `replacedText` if the agent changed the text
+- `type: "text"` — includes `selectedText` and `range` for locating the exact text; optionally `replacedText` if the agent updated the text (called `anchorText` at the MCP level)
 - `type: "element"` — includes `elementSelector` with `cssSelector`, `xpath`, and `outerHtmlPreview`
 - `status` — lifecycle state: `open` → `in_progress` (agent working) → `addressed` (agent acted on it, awaiting human review). Terminal actions: Accept (deletes annotation) or Reopen (back to open). Derived from timestamps if absent for backward compatibility
 - `pageNotes` — general notes about a page, not tied to specific elements
@@ -94,14 +96,17 @@ The `.mcp.json` file at the project root enables auto-discovery for Claude Code 
 
 | Tool | Description |
 |------|-------------|
-| `list_annotations` | List all annotations, optionally filtered by `pageUrl` |
-| `list_page_notes` | List all page-level notes, optionally filtered by `pageUrl` |
-| `get_annotation` | Get a single annotation by ID with full detail |
-| `get_export` | Get a markdown export of all annotations and page notes |
-| `address_annotation` | Mark an annotation as addressed by the agent. Optionally provide `replacedText` to record what text replaced the original |
-| `add_agent_reply` | Add a reply to an annotation explaining what action was taken |
-| `update_annotation_target` | Update what text replaced the original annotated text (text annotations only) |
-| `set_in_progress` | Signal that the agent is about to start working — sets status to `in_progress` so the UI shows a working indicator instead of orphan warnings |
+| `list_annotations` | List all review feedback (text annotations, element annotations, and page notes) in a single call. Returns `{ annotations: [...], pageNotes: [...] }`. Optional params: `pageUrl` (string), `status` (enum: open/in_progress/addressed) |
+| `start_work` | Begin working on an annotation — returns full annotation detail and atomically sets status to `in_progress`. Params: `id` (string) |
+| `finish_work` | Mark an annotation as addressed. Optionally updates anchor text and/or adds an agent reply. Params: `id` (string), `anchorText` (string, optional), `message` (string, optional) |
+
+### Agent Workflow
+
+The three tools follow a simple list → start → finish workflow:
+
+1. **`list_annotations`** — discover what needs doing (filter by page or status)
+2. **`start_work(id)`** — claim an annotation and get full detail (status becomes `in_progress`)
+3. **`finish_work(id)`** — mark as addressed once the change is made; optionally record `anchorText` (what replaced the original text) and a `message` explaining the change
 
 ### Running manually
 
@@ -150,7 +155,9 @@ Significant architectural decisions are documented in `docs/adr/`. When implemen
 - `src/integrations/express.ts` — Express/Connect adapter (`review-loop/express`)
 - `src/mcp/server.ts` — MCP server entry point (CLI argument parsing, tool registration)
 - `src/mcp/types.ts` — shared MCP tool result types (ToolResult, ErrorResult)
-- `src/mcp/tools/` — individual MCP tool handlers
+- `src/mcp/tools/list-annotations.ts` — `list_annotations` tool handler
+- `src/mcp/tools/start-work.ts` — `start_work` tool handler
+- `src/mcp/tools/finish-work.ts` — `finish_work` tool handler
 - `.mcp.json` — MCP auto-discovery configuration
 - `docs/spec/specification.md` — full component specification
 - `docs/adr/` — architecture decision records

@@ -38,7 +38,7 @@ No other configuration is needed — Claude Code reads `.mcp.json` on startup.
 1. Claude Code reads `.mcp.json` on startup
 2. It spawns `node ./node_modules/review-loop/dist/mcp/server.js` as a child process using stdio transport
 3. The MCP server reads `inline-review.json` from disk on every tool call
-4. Claude Code gains access to seven tools for listing, reading, addressing, replying to, and updating annotations
+4. Claude Code gains access to three tools for listing, starting work on, and finishing annotations
 
 ### Custom storage path
 
@@ -81,12 +81,10 @@ Human reviewer (browser)        AI coding agent (MCP)
    elements, add notes
                          ──────►
                                 3. list_annotations → see all feedback
-                                4. set_in_progress → signal work starting
+                                4. start_work → signal work starting
                                 5. Make source code changes
-                                6. address_annotation → mark addressed
-                                7. add_agent_reply → explain changes
-                                8. update_annotation_target → record
-                                   what text replaced the original
+                                6. finish_work → mark addressed, update
+                                   anchor text, and explain changes
                          ◄──────
 9. See addressed status and
    agent replies in panel
@@ -96,11 +94,13 @@ Human reviewer (browser)        AI coding agent (MCP)
 
 1. **Reviewer annotates** — using the browser overlay during `astro dev`, the reviewer selects text or Alt+clicks elements and adds notes describing what needs to change.
 
-2. **Agent reads annotations** — the coding agent calls `list_annotations` or `get_export` to see all review feedback with page URLs, selected text, and reviewer notes.
+2. **Agent reads annotations** — the coding agent calls `list_annotations` to see all review feedback (annotations + page notes) with page URLs, selected text, and reviewer notes.
 
-3. **Agent makes changes** — using the annotation context (page URL, selected text, reviewer note), the agent locates and modifies the relevant source files.
+3. **Agent starts work** — the agent calls `start_work` on an annotation to get full detail and signal that it's working. The browser UI shows a "working" indicator.
 
-4. **Agent marks addressed and replies** — after making changes, the agent calls `address_annotation` to mark the item as addressed, `add_agent_reply` to explain what changed, and optionally `update_annotation_target` to record the replacement text.
+4. **Agent makes changes** — using the annotation context (page URL, selected text, reviewer note), the agent locates and modifies the relevant source files.
+
+5. **Agent finishes work** — the agent calls `finish_work` to mark the annotation as addressed, optionally providing the replacement text (for re-anchoring) and a reply message explaining what changed.
 
 5. **Reviewer sees responses** — the browser UI shows addressed annotations with their status and displays agent replies inline, so the reviewer can Accept (delete the annotation) or Reopen with a follow-up note.
 
@@ -128,4 +128,4 @@ Human reviewer (browser)        AI coding agent (MCP)
 - Some MCP clients cache tool lists — restart the agent or reconnect the MCP server
 - Verify the server starts without errors: `node ./node_modules/review-loop/dist/mcp/server.js` should run silently (output goes to stderr only on errors)
 
-See [MCP Tools Reference](./mcp-tools.md) for detailed documentation of each tool.
+See [MCP Guide](./mcp.md) for detailed documentation of each tool and the complete agent workflow.

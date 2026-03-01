@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, beforeAll } from 'vitest';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { existsSync, mkdirSync, writeFileSync, readFileSync, unlinkSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync, readFileSync, unlinkSync } from 'node:fs';
 import type { ReviewStore } from '../../src/shared/types.js';
 
 const PROJECT_ROOT = join(import.meta.dirname, '../..');
@@ -168,7 +168,7 @@ describe('MCP server integration', () => {
     if (existsSync(storagePath)) unlinkSync(storagePath);
   });
 
-  it('initializes and lists tools', async () => {
+  it('initializes and lists only the three simplified tools', async () => {
     const initResponse = await client.initialize();
     expect(initResponse.result).toBeDefined();
 
@@ -177,24 +177,32 @@ describe('MCP server integration', () => {
     const toolNames = tools.map(t => t.name);
 
     expect(toolNames).toContain('list_annotations');
-    expect(toolNames).toContain('list_page_notes');
-    expect(toolNames).toContain('get_annotation');
-    expect(toolNames).toContain('get_export');
-    expect(toolNames).toContain('address_annotation');
-    expect(toolNames).toContain('add_agent_reply');
-    expect(toolNames).toContain('set_in_progress');
+    expect(toolNames).toContain('start_work');
+    expect(toolNames).toContain('finish_work');
+    expect(toolNames).toHaveLength(3);
+
+    // Verify removed tools are not present
+    expect(toolNames).not.toContain('list_page_notes');
+    expect(toolNames).not.toContain('get_annotation');
+    expect(toolNames).not.toContain('get_export');
+    expect(toolNames).not.toContain('address_annotation');
+    expect(toolNames).not.toContain('add_agent_reply');
+    expect(toolNames).not.toContain('update_annotation_target');
+    expect(toolNames).not.toContain('set_in_progress');
   });
 
-  it('list_annotations returns all annotations', async () => {
+  it('list_annotations returns annotations and page notes', async () => {
     await client.initialize();
 
     const response = await client.callTool('list_annotations');
     const result = response.result as { content: Array<{ type: string; text: string }> };
-    const annotations = JSON.parse(result.content[0].text);
+    const data = JSON.parse(result.content[0].text);
 
-    expect(annotations).toHaveLength(2);
-    expect(annotations[0].id).toBe('ann-1');
-    expect(annotations[1].id).toBe('ann-2');
+    expect(data.annotations).toHaveLength(2);
+    expect(data.annotations[0].id).toBe('ann-1');
+    expect(data.annotations[1].id).toBe('ann-2');
+    expect(data.pageNotes).toHaveLength(1);
+    expect(data.pageNotes[0].id).toBe('pn-1');
   });
 
   it('list_annotations filters by pageUrl', async () => {
@@ -202,80 +210,97 @@ describe('MCP server integration', () => {
 
     const response = await client.callTool('list_annotations', { pageUrl: '/about' });
     const result = response.result as { content: Array<{ type: string; text: string }> };
-    const annotations = JSON.parse(result.content[0].text);
+    const data = JSON.parse(result.content[0].text);
 
-    expect(annotations).toHaveLength(1);
-    expect(annotations[0].id).toBe('ann-2');
+    expect(data.annotations).toHaveLength(1);
+    expect(data.annotations[0].id).toBe('ann-2');
+    expect(data.pageNotes).toHaveLength(0);
   });
 
-  it('get_annotation returns a single annotation', async () => {
+  it('list_annotations filters by status', async () => {
+    // Set one annotation to addressed
+    const store = makeTestStore();
+    store.annotations[0].status = 'addressed';
+    store.annotations[0].addressedAt = '2026-01-15T00:00:00.000Z';
+    writeStore(storagePath, store);
+
     await client.initialize();
 
-    const response = await client.callTool('get_annotation', { id: 'ann-1' });
+    const response = await client.callTool('list_annotations', { status: 'open' });
+    const result = response.result as { content: Array<{ type: string; text: string }> };
+    const data = JSON.parse(result.content[0].text);
+
+    // Only the non-addressed annotation should be returned
+    expect(data.annotations).toHaveLength(1);
+    expect(data.annotations[0].id).toBe('ann-2');
+  });
+
+  it('start_work returns annotation detail and sets in_progress', async () => {
+    await client.initialize();
+
+    const response = await client.callTool('start_work', { id: 'ann-1' });
     const result = response.result as { content: Array<{ type: string; text: string }> };
     const annotation = JSON.parse(result.content[0].text);
 
     expect(annotation.id).toBe('ann-1');
     expect(annotation.note).toBe('Fix this typo');
+    expect(annotation.status).toBe('in_progress');
+    expect(annotation.inProgressAt).toBeDefined();
+
+    // Verify persisted to disk
+    const store = readStore(storagePath);
+    expect(store.annotations[0].status).toBe('in_progress');
   });
 
-  it('get_annotation returns error for invalid ID', async () => {
+  it('start_work returns error for invalid ID', async () => {
     await client.initialize();
 
-    const response = await client.callTool('get_annotation', { id: 'nonexistent' });
+    const response = await client.callTool('start_work', { id: 'nonexistent' });
     const result = response.result as { content: Array<{ type: string; text: string }>; isError: boolean };
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain('not found');
   });
 
-  it('address_annotation defaults to addressed status', async () => {
+  it('finish_work marks addressed and adds reply', async () => {
     await client.initialize();
 
-    const response = await client.callTool('address_annotation', { id: 'ann-1' });
+    const response = await client.callTool('finish_work', {
+      id: 'ann-1',
+      anchorText: 'Hello World',
+      message: 'Capitalised the W in World',
+    });
     const result = response.result as { content: Array<{ type: string; text: string }> };
     const annotation = JSON.parse(result.content[0].text);
 
     expect(annotation.status).toBe('addressed');
     expect(annotation.addressedAt).toBeDefined();
+    expect(annotation.replacedText).toBe('Hello World');
+    expect(annotation.replies).toHaveLength(1);
+    expect(annotation.replies[0].message).toBe('Capitalised the W in World');
 
     // Verify persisted to disk
     const store = readStore(storagePath);
     expect(store.annotations[0].status).toBe('addressed');
-    expect(store.annotations[0].addressedAt).toBeDefined();
+    expect(store.annotations[0].replies).toHaveLength(1);
   });
 
-  it('add_agent_reply persists to disk', async () => {
+  it('finish_work works with only required params', async () => {
     await client.initialize();
 
-    const response = await client.callTool('add_agent_reply', { id: 'ann-2', message: 'Fixed the copy' });
+    const response = await client.callTool('finish_work', { id: 'ann-2' });
     const result = response.result as { content: Array<{ type: string; text: string }> };
     const annotation = JSON.parse(result.content[0].text);
 
-    expect(annotation.replies).toHaveLength(1);
-    expect(annotation.replies[0].message).toBe('Fixed the copy');
-
-    // Verify persisted to disk
-    const store = readStore(storagePath);
-    expect(store.annotations[1].replies).toHaveLength(1);
-  });
-
-  it('get_export returns markdown', async () => {
-    await client.initialize();
-
-    const response = await client.callTool('get_export');
-    const result = response.result as { content: Array<{ type: string; text: string }> };
-
-    expect(result.content[0].text).toContain('# Review Loop');
-    expect(result.content[0].text).toContain('Hello world');
-    expect(result.content[0].text).toContain('Fix this typo');
+    expect(annotation.status).toBe('addressed');
+    expect(annotation.addressedAt).toBeDefined();
   });
 
   it('handles missing required params with error', async () => {
     await client.initialize();
 
-    // get_annotation requires 'id' — omit it
-    const response = await client.callTool('get_annotation', {});
+    // start_work requires 'id' — omit it
+    const response = await client.callTool('start_work', {});
 
     // MCP SDK may return a JSON-RPC error or a tool-level isError result
     const hasJsonRpcError = response.error !== undefined;
@@ -308,44 +333,52 @@ describe('MCP server end-to-end workflow', () => {
     if (existsSync(storagePath)) unlinkSync(storagePath);
   });
 
-  it('list → resolve → reply → export shows complete workflow', async () => {
+  it('list → start → finish shows complete workflow', async () => {
     await client.initialize();
 
     // Step 1: List annotations to see what needs attention
     const listResponse = await client.callTool('list_annotations');
     const listResult = listResponse.result as { content: Array<{ type: string; text: string }> };
-    const annotations = JSON.parse(listResult.content[0].text);
-    expect(annotations).toHaveLength(2);
+    const data = JSON.parse(listResult.content[0].text);
+    expect(data.annotations).toHaveLength(2);
+    expect(data.pageNotes).toHaveLength(1);
 
-    // Step 2: Address the first annotation (default behaviour)
-    const addressResponse = await client.callTool('address_annotation', { id: 'ann-1' });
-    const addressResult = addressResponse.result as { content: Array<{ type: string; text: string }> };
-    const addressed = JSON.parse(addressResult.content[0].text);
-    expect(addressed.status).toBe('addressed');
-    expect(addressed.addressedAt).toBeDefined();
+    // Step 2: Start work on the first annotation
+    const startResponse = await client.callTool('start_work', { id: 'ann-1' });
+    const startResult = startResponse.result as { content: Array<{ type: string; text: string }> };
+    const started = JSON.parse(startResult.content[0].text);
+    expect(started.status).toBe('in_progress');
+    expect(started.inProgressAt).toBeDefined();
 
-    // Step 3: Add a reply to the second annotation
-    const replyResponse = await client.callTool('add_agent_reply', {
-      id: 'ann-2',
-      message: 'Updated company description to reflect current information',
+    // Step 3: Finish work with anchor text and message
+    const finishResponse = await client.callTool('finish_work', {
+      id: 'ann-1',
+      anchorText: 'Hello World',
+      message: 'Capitalised the W in World',
     });
-    const replyResult = replyResponse.result as { content: Array<{ type: string; text: string }> };
-    const replied = JSON.parse(replyResult.content[0].text);
-    expect(replied.replies).toHaveLength(1);
+    const finishResult = finishResponse.result as { content: Array<{ type: string; text: string }> };
+    const finished = JSON.parse(finishResult.content[0].text);
+    expect(finished.status).toBe('addressed');
+    expect(finished.addressedAt).toBeDefined();
+    expect(finished.replacedText).toBe('Hello World');
+    expect(finished.replies).toHaveLength(1);
+    expect(finished.replies[0].message).toBe('Capitalised the W in World');
 
-    // Step 4: Get export — should include resolved status and reply
-    const exportResponse = await client.callTool('get_export');
-    const exportResult = exportResponse.result as { content: Array<{ type: string; text: string }> };
-    const markdown = exportResult.content[0].text;
-
-    expect(markdown).toContain('[Addressed]');
-    expect(markdown).toContain('Updated company description');
-
-    // Step 5: Verify the JSON file reflects all changes
+    // Step 4: Verify the JSON file reflects all changes
     const store = readStore(storagePath);
     expect(store.annotations[0].status).toBe('addressed');
     expect(store.annotations[0].addressedAt).toBeDefined();
-    expect(store.annotations[1].replies).toHaveLength(1);
-    expect(store.annotations[1].replies![0].message).toContain('Updated company description');
+    if (store.annotations[0].type === 'text') {
+      expect(store.annotations[0].replacedText).toBe('Hello World');
+    }
+    expect(store.annotations[0].replies).toHaveLength(1);
+    expect(store.annotations[0].replies![0].message).toContain('Capitalised');
+
+    // Step 5: List again with status filter — should only show open annotations
+    const listOpenResponse = await client.callTool('list_annotations', { status: 'open' });
+    const listOpenResult = listOpenResponse.result as { content: Array<{ type: string; text: string }> };
+    const openData = JSON.parse(listOpenResult.content[0].text);
+    expect(openData.annotations).toHaveLength(1);
+    expect(openData.annotations[0].id).toBe('ann-2');
   });
 });

@@ -38,7 +38,7 @@ The [Model Context Protocol](https://modelcontextprotocol.io) (MCP) is the prima
 - **No copy-paste** — the agent reads annotations directly from `inline-review.json`
 - **Rich context** — each annotation carries the page URL, exact text, XPath ranges, and surrounding context
 - **Closed loop** — the agent marks annotations as addressed, adds reply messages, and updates replaced text — the reviewer sees all of this in the browser panel
-- **Status lifecycle** — annotations progress through `open` → `addressed` (agent acted) → `resolved` (reviewer confirmed)
+- **Status lifecycle** — annotations progress through `open` → `in_progress` (agent working) → `addressed` (agent acted). Reviewers then Accept (delete) or Reopen with follow-up notes
 
 A secondary **Markdown export** is also available for agents that don't support MCP, or for sharing feedback outside agent workflows. See [Markdown Export](#markdown-export).
 
@@ -144,13 +144,12 @@ Claude Code reads `.mcp.json` on startup and discovers the annotation tools auto
 
 ### Agent workflow (MCP)
 
-Once connected via MCP, the agent:
+Once connected via MCP, the agent follows a three-step workflow:
 
-1. Calls `list_annotations` to see all feedback with page URLs and selected text
-2. Makes source code changes based on annotation context
-3. Calls `resolve_annotation` to mark items as addressed
-4. Calls `add_agent_reply` to explain what changed
-5. Calls `update_annotation_target` to record what text replaced the original
+1. Calls `list_annotations` to see all feedback (annotations + page notes) with page URLs and selected text
+2. Calls `start_work` on an annotation — gets full detail and signals "working on it" to the browser UI
+3. Makes source code changes based on annotation context
+4. Calls `finish_work` to mark the annotation as addressed, optionally recording the replacement text and a reply message
 
 The reviewer sees status updates and agent replies in the browser panel in real time.
 
@@ -171,7 +170,7 @@ Shortcuts are suppressed when focus is in an input, textarea, or contentEditable
 - **Element annotations.** Alt+click any element (images, buttons, sections) to annotate it.
 - **Page notes.** Add free-text notes scoped to a page, not tied to a selection.
 - **MCP server.** Coding agents connect via MCP to read, resolve, and reply to annotations.
-- **Status lifecycle.** Annotations track `open` → `addressed` → `resolved` states.
+- **Status lifecycle.** Annotations track `open` → `in_progress` → `addressed` states, with Accept/Reopen terminal actions.
 - **Persistent.** Annotations survive page reloads, navigation, and dev server restarts.
 - **Multi-page.** Annotations are scoped by URL but viewable across all pages.
 - **Shadow DOM isolation.** All UI is isolated from your site's styles.
@@ -189,21 +188,19 @@ For MCP clients other than Claude Code, configure the stdio transport manually:
 
 ### Available tools
 
+The MCP server exposes three tools that guide agents through a **list → start → finish** workflow:
+
 | Tool | Description |
 |------|-------------|
-| `list_annotations` | List all annotations, optionally filtered by page URL |
-| `list_page_notes` | List page-level notes, optionally filtered by page URL |
-| `get_annotation` | Get a single annotation by ID |
-| `get_export` | Markdown export of all annotations and page notes |
-| `resolve_annotation` | Mark an annotation as addressed (default) or resolved |
-| `add_agent_reply` | Add a reply explaining what action was taken |
-| `update_annotation_target` | Record what text replaced the original annotated text |
+| `list_annotations` | List all feedback (annotations + page notes), optionally filtered by page URL and/or status |
+| `start_work` | Get full annotation detail and atomically set status to `in_progress` |
+| `finish_work` | Mark as addressed, optionally update anchor text and add a reply message |
 
-See [MCP Setup Guide](docs/guides/mcp-setup.md) for detailed setup and [MCP Tools Reference](docs/guides/mcp-tools.md) for the full tool reference.
+See [MCP Guide](docs/guides/mcp.md) for detailed tool reference and workflow documentation.
 
 ## Markdown Export
 
-For agents that don't support MCP, or for sharing feedback outside agent workflows, a Markdown export is available via the MCP `get_export` tool or the "Copy All" button in the panel.
+For agents that don't support MCP, or for sharing feedback outside agent workflows, a Markdown export is available via the "Copy All" button in the panel or the REST API (`GET /__inline-review/api/export`).
 
 The export groups annotations by page:
 
@@ -312,7 +309,7 @@ The acceptance test suite lives in a separate repository: [review-loop-tests](ht
 | **Selection model** | Text selection + element selection (Alt+click) | Element selection (annotate whole HTML elements) |
 | **Agent integration** | MCP server (primary) + Markdown export | JSON file |
 | **Location tracking** | XPath ranges with surrounding context | CSS selectors (IDs, data-testid, tag+class) |
-| **Status tracking** | open → addressed → resolved, with agent replies via MCP | open/resolved status per annotation |
+| **Status tracking** | open → in_progress → addressed, with agent replies via MCP | open/resolved status per annotation |
 | **Device tagging** | No | Yes, desktop/mobile/tablet with viewport dimensions |
 | **Deployment model** | Dev-only by design | Dev-only now, deployed mode planned (Cloudflare Pages) |
 
@@ -330,7 +327,7 @@ The acceptance test suite lives in a separate repository: [review-loop-tests](ht
 | **Framework support** | Astro, Vite (SvelteKit/Nuxt/Remix), Express/Connect | Any localhost dev server |
 | **Selection model** | Text selection + element selection (Alt+click) | Element click only |
 | **MCP transport** | stdio | SSE |
-| **Status lifecycle** | open → addressed → resolved, with agent replies | Read → implement → delete (batch cycle) |
+| **Status lifecycle** | open → in_progress → addressed, with agent replies | Read → implement → delete (batch cycle) |
 | **Persistence** | JSON file in project root (survives restarts, committable) | Server-side (cleared per cycle) |
 
 **Choose review-loop** if you need text-level precision for copy review, a persistent status lifecycle with agent replies, or zero-install setup for Astro projects.
