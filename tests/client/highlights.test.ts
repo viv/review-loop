@@ -221,6 +221,30 @@ describe('pulseHighlight', () => {
     expect(mark.style.backgroundColor).toBe('rgba(217, 119, 6, 0.3)');
   });
 
+  it('restores in_progress background after 600ms', () => {
+    document.body.innerHTML = '<p><mark data-air-id="id-1" style="background-color: rgba(244,114,182,0.2); border-radius: 2px; cursor: pointer;">hello</mark></p>';
+
+    pulseHighlight('id-1');
+
+    const mark = document.querySelector('mark') as HTMLElement;
+    // During pulse, background is brighter
+    expect(mark.style.backgroundColor).toBe('rgba(217, 119, 6, 0.6)');
+
+    vi.advanceTimersByTime(600);
+    // After pulse, original in_progress colour is restored
+    expect(mark.style.backgroundColor).toBe('rgba(244, 114, 182, 0.2)');
+  });
+
+  it('restores addressed background after 600ms', () => {
+    document.body.innerHTML = '<p><mark data-air-id="id-1" style="background-color: rgba(148,163,184,0.2); border-radius: 2px; cursor: pointer;">hello</mark></p>';
+
+    pulseHighlight('id-1');
+    vi.advanceTimersByTime(600);
+
+    const mark = document.querySelector('mark') as HTMLElement;
+    expect(mark.style.backgroundColor).toBe('rgba(148, 163, 184, 0.2)');
+  });
+
   it('removes data-air-pulse and transition after 900ms', () => {
     document.body.innerHTML = '<p><mark data-air-id="id-1" style="background-color: rgba(217,119,6,0.3); border-radius: 2px; cursor: pointer;">hello</mark></p>';
 
@@ -288,7 +312,34 @@ describe('pulseElementHighlight', () => {
     const el = document.querySelector('[data-air-element-id="el-1"]') as HTMLElement;
     expect(el.style.backgroundColor).toBe('');
     expect(el.style.boxShadow).toBe('');
+    // Outline colour restored to its original value (decomposed from the outline shorthand)
     expect(el.style.outlineColor).toBe('rgba(217, 119, 6, 0.8)');
+  });
+
+  it('restores in_progress outline colour after 600ms', () => {
+    const el = document.createElement('div');
+    document.body.appendChild(el);
+    applyElementHighlight(el, 'el-ip', 'in_progress');
+
+    pulseElementHighlight('el-ip');
+    // During pulse, outline is bright amber
+    expect(el.style.outlineColor).toBe('rgba(217, 119, 6, 1)');
+
+    vi.advanceTimersByTime(600);
+    // After pulse, original in_progress pink is restored
+    expect(el.style.outline).toContain('rgba(244, 114, 182, 0.5)');
+  });
+
+  it('restores addressed outline colour after 600ms', () => {
+    const el = document.createElement('div');
+    document.body.appendChild(el);
+    applyElementHighlight(el, 'el-addr', 'addressed');
+
+    pulseElementHighlight('el-addr');
+    vi.advanceTimersByTime(600);
+
+    // After pulse, original addressed silver is restored
+    expect(el.style.outline).toContain('rgba(148, 163, 184, 0.5)');
   });
 
   it('removes data-air-pulse and transition after 900ms', () => {

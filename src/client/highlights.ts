@@ -82,16 +82,18 @@ export function getHighlightMarks(id: string): Element[] {
 
 /**
  * Add a pulse animation to a highlight (used when scrolling to it from the panel).
+ * Preserves the current status colour by saving and restoring the original background.
  */
 export function pulseHighlight(id: string): void {
   const marks = getHighlightMarks(id);
   for (const mark of marks) {
     const el = mark as HTMLElement;
+    const origBg = el.style.backgroundColor;
     el.setAttribute('data-air-pulse', '');
     el.style.transition = 'background-color 0.3s ease';
     el.style.backgroundColor = 'rgba(217,119,6,0.6)';
     setTimeout(() => {
-      el.style.backgroundColor = 'rgba(217,119,6,0.3)';
+      el.style.backgroundColor = origBg;
     }, 600);
     setTimeout(() => {
       el.style.transition = '';
@@ -142,6 +144,7 @@ export function removeElementHighlight(id: string): void {
  * Add a pulse animation to an element highlight.
  * Uses a background flash and box-shadow (matching the text highlight pulse)
  * so the effect is clearly visible, not just a subtle outline change.
+ * Preserves the current status colour by saving and restoring the original outline.
  */
 export function pulseElementHighlight(id: string): void {
   const el = document.querySelector(`[${ELEMENT_HIGHLIGHT_ATTR}="${CSS.escape(id)}"]`) as HTMLElement | null;
@@ -151,6 +154,7 @@ export function pulseElementHighlight(id: string): void {
   // Save originals to restore after animation
   const origBg = el.style.backgroundColor;
   const origBoxShadow = el.style.boxShadow;
+  const origOutlineColor = el.style.outlineColor;
 
   el.style.transition = 'background-color 0.3s ease, box-shadow 0.3s ease, outline-color 0.3s ease';
   el.style.outlineColor = 'rgba(217,119,6,1)';
@@ -158,7 +162,7 @@ export function pulseElementHighlight(id: string): void {
   el.style.boxShadow = '0 0 0 4px rgba(217,119,6,0.3)';
 
   setTimeout(() => {
-    el.style.outlineColor = 'rgba(217,119,6,0.8)';
+    el.style.outlineColor = origOutlineColor;
     el.style.backgroundColor = origBg;
     el.style.boxShadow = origBoxShadow;
   }, 600);
