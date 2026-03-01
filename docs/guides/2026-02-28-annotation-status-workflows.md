@@ -23,8 +23,8 @@ type AnnotationStatus = 'open' | 'in_progress' | 'addressed';
 | Status | Meaning | Set By |
 |--------|---------|--------|
 | `open` | New annotation, or reopened by reviewer | Default on creation; reviewer via Reopen button |
-| `in_progress` | Agent is actively working on the annotation | Agent via MCP `set_in_progress` tool |
-| `addressed` | Agent has acted on the annotation (awaiting human review) | Agent via MCP `address_annotation` tool |
+| `in_progress` | Agent is actively working on the annotation | Agent via MCP `start_work` tool |
+| `addressed` | Agent has acted on the annotation (awaiting human review) | Agent via MCP `finish_work` tool |
 
 Terminal actions (not statuses):
 - **Accept** — deletes the annotation (reviewer approves)
@@ -48,12 +48,12 @@ Status is stored explicitly in the `status` field on each annotation. For backwa
      +---------+
      |  OPEN   |  Buttons: [Delete]
      +----+----+
-          |  Agent calls set_in_progress (MCP)
+          |  Agent calls start_work (MCP)
           v
   +---------------+
   |  IN_PROGRESS  |  Buttons: [NONE]  Badge: "Agent working..."
   +-------+-------+
-          |  Agent calls address_annotation (MCP)
+          |  Agent calls finish_work (MCP)
           v
   +---------------+
   |   ADDRESSED   |  Buttons: [Accept] [Reopen]  Badge: "Addressed"
@@ -76,14 +76,14 @@ Status is stored explicitly in the `status` field on each annotation. For backwa
   +---------->|   OPEN   |<---------- Reopen -----------+
   |           +-----+----+        (from addressed)      |
   |                 |                                    |
-  |            set_in_progress                           |
+  |            start_work                                |
   |                 |                                    |
   |                 v                                    |
   |        +--------------+                              |
   |        | IN_PROGRESS  |                              |
   |        +------+-------+                              |
   |               |                                      |
-  |        address_annotation                            |
+  |        finish_work                                   |
   |               |                                      |
   |               v                                      |
   |        +------------+                                |
@@ -112,29 +112,26 @@ Status is stored explicitly in the `status` field on each annotation. For backwa
 
 ## MCP Agent Integration
 
-### Recommended Agent Workflow
+### Recommended Agent Workflow (list → start → finish)
 
 ```
-1. set_in_progress(id)          -- Signal work starting
+1. list_annotations()              -- See all feedback (annotations + page notes)
         |
-2. (edit source code)           -- Make changes
+2. start_work(id)                  -- Signal work starting + get full detail
         |
-3. add_agent_reply(id, msg)     -- Optional: log progress notes
+3. (edit source code)              -- Make changes
         |
-4. address_annotation(id)      -- Mark work complete (awaiting review)
-        |
-   Options:
-     - replacedText: "new text":  Record what replaced the original
+4. finish_work(id, anchorText?,    -- Mark work complete, update anchor text,
+                message?)             and leave a reply (all in one call)
 ```
 
 ### MCP Tools Reference
 
 | Tool | Effect | Status After |
 |------|--------|--------------|
-| `set_in_progress` | Signals agent is working; UI shows grace period | `in_progress` |
-| `add_agent_reply` | Appends reply to timeline; no status change | (unchanged) |
-| `address_annotation` | Marks agent's work complete, awaiting review | `addressed` |
-| `update_annotation_target` | Updates `replacedText` for re-anchoring | (unchanged) |
+| `list_annotations` | Returns all feedback with optional status/page filters | (unchanged) |
+| `start_work` | Signals agent is working; returns full detail; UI shows grace period | `in_progress` |
+| `finish_work` | Marks work complete, optionally updates anchor text and adds reply | `addressed` |
 
 ## Timestamp Management
 
@@ -183,7 +180,7 @@ interface AgentReply {
 }
 ```
 
-- **Agent replies**: Added via MCP `add_agent_reply` tool (`role: 'agent'` set explicitly)
+- **Agent replies**: Added via MCP `finish_work` tool's `message` parameter (`role: 'agent'` set explicitly)
 - **Reviewer replies**: Added when reopening with a follow-up note (`role: 'reviewer'`)
 - **Display**: Panel shows "Agent:" or "Reviewer:" prefix; markdown export uses the same prefixes
 
@@ -236,6 +233,5 @@ When annotations lose their DOM anchor (e.g., after a Vite hot-reload), the `Orp
 | `src/client/index.ts` | Status change callback wiring |
 | `src/client/orphan-tracker.ts` | Grace period logic for orphaned annotations |
 | `src/shared/export.ts` | Markdown export with status badges |
-| `src/mcp/tools/address-annotation.ts` | MCP address tool |
-| `src/mcp/tools/set-in-progress.ts` | MCP in_progress tool |
-| `src/mcp/tools/add-agent-reply.ts` | MCP reply tool |
+| `src/mcp/tools/start-work.ts` | MCP start_work tool |
+| `src/mcp/tools/finish-work.ts` | MCP finish_work tool |

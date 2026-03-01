@@ -136,7 +136,7 @@ interface AgentReply {
 }
 ```
 
-Replies are appended to the `replies` array chronologically. Agent replies are added via the MCP `add_agent_reply` tool. Reviewer replies are added via `PATCH /annotations/:id` with a `reply` field when reopening an annotation with a follow-up note. The `role` field defaults to `'agent'` when absent for backward compatibility. The `status`, `inProgressAt`, `addressedAt`, and `replies` fields are all optional — their absence means "open" / "not in progress" / "not addressed" / "no replies". The `resolvedAt` field is kept for backward compatibility reads but is never set by new code. No migration is needed for existing data.
+Replies are appended to the `replies` array chronologically. Agent replies are added via the MCP `finish_work` tool (optional `message` parameter). Reviewer replies are added via `PATCH /annotations/:id` with a `reply` field when reopening an annotation with a follow-up note. The `role` field defaults to `'agent'` when absent for backward compatibility. The `status`, `inProgressAt`, `addressedAt`, and `replies` fields are all optional — their absence means "open" / "not in progress" / "not addressed" / "no replies". The `resolvedAt` field is kept for backward compatibility reads but is never set by new code. No migration is needed for existing data.
 
 #### 3.2.2 TextAnnotation
 
@@ -151,7 +151,7 @@ interface TextAnnotation extends BaseAnnotation {
 
 Text annotations are the original annotation type — created by selecting text on the page and attaching a note.
 
-The optional `replacedText` field records what the original selected text was changed to by an agent. When set, the client uses it for Tier 2.5 location matching (see Section 15.2). It is set via the `update_annotation_target` MCP tool or the `PATCH /annotations/:id` REST endpoint. Its absence means "no replacement recorded" — behaviour is identical to before.
+The optional `replacedText` field records what the original selected text was changed to by an agent. When set, the client uses it for Tier 2.5 location matching (see Section 15.2). It is set via the `finish_work` MCP tool (optional `anchorText` parameter, stored as `replacedText`) or the `PATCH /annotations/:id` REST endpoint. Its absence means "no replacement recorded" — behaviour is identical to before.
 
 #### 3.2.3 ElementAnnotation
 
@@ -189,8 +189,8 @@ open → in_progress → addressed
 | Status | Meaning | Set by |
 |--------|---------|--------|
 | `open` | Annotation is new or has been reopened | Default on creation; human reviewer via Reopen button |
-| `in_progress` | An agent is actively working on the annotation | Agent via MCP `set_in_progress` tool |
-| `addressed` | An agent has acted on the annotation (awaiting human review) | Agent via MCP `address_annotation` tool |
+| `in_progress` | An agent is actively working on the annotation | Agent via MCP `start_work` tool |
+| `addressed` | An agent has acted on the annotation (awaiting human review) | Agent via MCP `finish_work` tool |
 
 Terminal actions (not statuses):
 - **Accept** → deletes the annotation (reviewer approves the agent's work)
@@ -198,8 +198,8 @@ Terminal actions (not statuses):
 - **Delete** → removes the annotation (only on `open` status)
 
 **Status transitions**:
-- `open` → `in_progress`: Agent calls `set_in_progress` MCP tool before editing source code
-- `open` or `in_progress` → `addressed`: Agent calls `address_annotation` MCP tool
+- `open` → `in_progress`: Agent calls `start_work` MCP tool before editing source code
+- `open` or `in_progress` → `addressed`: Agent calls `finish_work` MCP tool
 - `addressed` → *(deleted)*: Human reviewer clicks Accept button in panel — annotation is removed entirely
 - `addressed` → `open`: Human reviewer clicks Reopen button in panel (clears all progress timestamps), optionally with follow-up note
 
@@ -564,22 +564,19 @@ The MCP (Model Context Protocol) server provides structured agent access to revi
 
 #### 4.3.2 MCP Tools
 
+The MCP server exposes three tools that follow a **list → start → finish** workflow:
+
 | Tool | Type | Parameters | Description |
 |------|------|-----------|-------------|
-| `list_annotations` | Read | `pageUrl` (string, optional) | List all annotations, optionally filtered by page URL |
-| `list_page_notes` | Read | `pageUrl` (string, optional) | List all page-level notes, optionally filtered by page URL |
-| `get_annotation` | Read | `id` (string, required) | Get a single annotation by ID with full detail |
-| `get_export` | Read | None | Get a markdown export of all annotations and page notes |
-| `address_annotation` | Write | `id` (string, required) | Mark an annotation as addressed (see below) |
-| `add_agent_reply` | Write | `id` (string, required), `message` (string, required) | Add a reply to an annotation explaining what action was taken |
-| `update_annotation_target` | Write | `id` (string, required), `replacedText` (string, required) | Update what text replaced the original annotated text. Only applicable to text annotations. |
-| `set_in_progress` | Write | `id` (string, required) | Signal that the agent is about to start working on an annotation. Sets status to `in_progress` so the UI shows a working indicator instead of an orphan warning during code edits and hot-reloads. |
+| `list_annotations` | Read | `pageUrl` (string, optional), `status` (enum: `open` \| `in_progress` \| `addressed`, optional) | List all review feedback — both annotations and page notes — in a single response. Returns `{ annotations: [...], pageNotes: [...] }`. Optionally filtered by page URL and/or status. |
+| `start_work` | Write | `id` (string, required) | Begin working on an annotation. Returns the full annotation detail and atomically sets status to `in_progress`, so the UI shows a working indicator instead of an orphan warning during code edits and hot-reloads. This is step 2 of the list → start → finish workflow. |
+| `finish_work` | Write | `id` (string, required), `anchorText` (string, optional), `message` (string, optional) | Mark an annotation as addressed. Optionally updates the anchor text (stored as `replacedText` — records what the original selected text was changed to) and/or adds an agent reply explaining what action was taken. This is step 3 of the workflow. |
 
-All parameters are validated via Zod schemas at the MCP SDK layer. ID parameters require non-empty strings (`.min(1)`). The `add_agent_reply` tool additionally validates that `message` is non-empty after trimming — an empty or whitespace-only message returns an error. The `update_annotation_target` tool validates that `replacedText` is non-empty after trimming and returns an error if the annotation is not a text annotation.
+All parameters are validated via Zod schemas at the MCP SDK layer. ID parameters require non-empty strings (`.min(1)`). The `finish_work` tool validates that `anchorText`, when provided, is non-empty after trimming and returns an error if the annotation is not a text annotation. The `message` parameter, when provided, is validated as non-empty after trimming.
 
-**`address_annotation` behaviour**: This tool sets the annotation's status to `'addressed'` and records an `addressedAt` timestamp. This reflects the intended workflow: the agent marks its work as done, and a human reviewer later accepts or reopens it via the UI.
+**`finish_work` behaviour**: This tool sets the annotation's status to `'addressed'` and records an `addressedAt` timestamp. If `anchorText` is provided, it is stored as the annotation's `replacedText` field (only valid for text annotations). If `message` is provided, it is appended to the annotation's `replies` array with `role: 'agent'`. This reflects the intended workflow: the agent marks its work as done, and a human reviewer later accepts or reopens it via the UI.
 
-**Return format:** All tools return `{ content: [{ type: 'text', text: '...' }] }`. Read tools return JSON-stringified data. `get_export` returns markdown text. Error responses include `isError: true` with a descriptive message.
+**Return format:** All tools return `{ content: [{ type: 'text', text: '...' }] }`. `list_annotations` returns JSON-stringified data containing both annotations and page notes. `start_work` returns the full annotation as JSON-stringified data. `finish_work` returns the full updated annotation as JSON-stringified data. Error responses include `isError: true` with a descriptive message.
 
 #### 4.3.3 Configuration
 
@@ -1868,5 +1865,5 @@ The following accessibility features are not yet implemented:
 | Press Cmd/Ctrl+Shift+. | Toggle panel | 10.1 |
 | Page reload | Highlights restored from server (text + element) | 8.4, 8.5.4, 8.7 |
 | Navigate to different page | Badge updates, highlights re-applied | 12.2 |
-| Agent calls `address_annotation` MCP tool | Annotation status set to addressed; store poller detects fingerprint change within 2s, restores highlights and refreshes panel if open | 4.3.2, 3.2.5, 5.7 |
+| Agent calls `finish_work` MCP tool | Annotation status set to addressed; store poller detects fingerprint change within 2s, restores highlights and refreshes panel if open | 4.3.2, 3.2.5, 5.7 |
 | `astro build` | Zero traces in output | 13 |
