@@ -24,6 +24,8 @@ import {
   showEditPopup,
   showElementPopup,
   showEditElementPopup,
+  showInProgressPopup,
+  showAddressedPopup,
   hidePopup,
   isPopupVisible,
   type PopupElements,
@@ -416,30 +418,69 @@ export function createAnnotator(deps: AnnotatorDeps): AnnotatorInstance {
     popupScrollY = window.scrollY;
     popupShownAt = Date.now();
     const rect = mark.getBoundingClientRect();
-    showEditPopup(popup, annotation.selectedText, annotation.note, rect, {
-      onSave: async (newNote) => {
-        hidePopup(popup);
-        try {
-          await api.updateAnnotation(annotationId, { note: newNote });
-          await refreshCacheAndBadge();
-        } catch (err) {
-          console.error('[review-loop] Failed to update annotation:', err);
-          showToast(shadowRoot, 'Failed to update annotation');
-        }
-      },
-      onCancel: () => hidePopup(popup),
-      onDelete: async () => {
-        hidePopup(popup);
-        try {
-          await api.deleteAnnotation(annotationId);
-          removeHighlight(annotationId);
-          await refreshCacheAndBadge();
-        } catch (err) {
-          console.error('[review-loop] Failed to delete annotation:', err);
-          showToast(shadowRoot, 'Failed to delete annotation');
-        }
-      },
-    });
+    const status = getAnnotationStatus(annotation);
+    const previewText = `"${annotation.selectedText}"`;
+    const latestReply = annotation.replies?.length ? annotation.replies[annotation.replies.length - 1] : undefined;
+
+    if (status === 'in_progress') {
+      showInProgressPopup(popup, previewText, annotation.note, rect, {
+        onCancel: () => hidePopup(popup),
+      }, latestReply);
+    } else if (status === 'addressed') {
+      showAddressedPopup(popup, previewText, annotation.note, rect, {
+        onAccept: async () => {
+          hidePopup(popup);
+          try {
+            await api.deleteAnnotation(annotationId);
+            removeHighlight(annotationId);
+            await refreshCacheAndBadge();
+          } catch (err) {
+            console.error('[review-loop] Failed to accept annotation:', err);
+            showToast(shadowRoot, 'Failed to accept annotation');
+          }
+        },
+        onReopen: async (message?: string) => {
+          hidePopup(popup);
+          try {
+            await api.updateAnnotation(annotationId, { status: 'open' });
+            if (message) {
+              await api.updateAnnotation(annotationId, { reply: { message, role: 'reviewer' } } as Partial<import('./types.js').Annotation>);
+            }
+            await restoreHighlights();
+          } catch (err) {
+            console.error('[review-loop] Failed to reopen annotation:', err);
+            showToast(shadowRoot, 'Failed to reopen annotation');
+          }
+        },
+        onCancel: () => hidePopup(popup),
+      }, latestReply);
+    } else {
+      // status === 'open'
+      showEditPopup(popup, annotation.selectedText, annotation.note, rect, {
+        onSave: async (newNote) => {
+          hidePopup(popup);
+          try {
+            await api.updateAnnotation(annotationId, { note: newNote });
+            await refreshCacheAndBadge();
+          } catch (err) {
+            console.error('[review-loop] Failed to update annotation:', err);
+            showToast(shadowRoot, 'Failed to update annotation');
+          }
+        },
+        onCancel: () => hidePopup(popup),
+        onDelete: async () => {
+          hidePopup(popup);
+          try {
+            await api.deleteAnnotation(annotationId);
+            removeHighlight(annotationId);
+            await refreshCacheAndBadge();
+          } catch (err) {
+            console.error('[review-loop] Failed to delete annotation:', err);
+            showToast(shadowRoot, 'Failed to delete annotation');
+          }
+        },
+      });
+    }
   }
 
   // --- Edit Existing Element Annotation ---
@@ -455,30 +496,69 @@ export function createAnnotator(deps: AnnotatorDeps): AnnotatorInstance {
     popupScrollY = window.scrollY;
     popupShownAt = Date.now();
     const rect = element.getBoundingClientRect();
-    showEditElementPopup(popup, annotation.elementSelector.description, annotation.note, rect, {
-      onSave: async (newNote) => {
-        hidePopup(popup);
-        try {
-          await api.updateAnnotation(annotationId, { note: newNote });
-          await refreshCacheAndBadge();
-        } catch (err) {
-          console.error('[review-loop] Failed to update element annotation:', err);
-          showToast(shadowRoot, 'Failed to update annotation');
-        }
-      },
-      onCancel: () => hidePopup(popup),
-      onDelete: async () => {
-        hidePopup(popup);
-        removeElementHighlight(annotationId);
-        try {
-          await api.deleteAnnotation(annotationId);
-          await refreshCacheAndBadge();
-        } catch (err) {
-          console.error('[review-loop] Failed to delete element annotation:', err);
-          showToast(shadowRoot, 'Failed to delete annotation');
-        }
-      },
-    });
+    const status = getAnnotationStatus(annotation);
+    const description = annotation.elementSelector.description;
+    const latestReply = annotation.replies?.length ? annotation.replies[annotation.replies.length - 1] : undefined;
+
+    if (status === 'in_progress') {
+      showInProgressPopup(popup, description, annotation.note, rect, {
+        onCancel: () => hidePopup(popup),
+      }, latestReply);
+    } else if (status === 'addressed') {
+      showAddressedPopup(popup, description, annotation.note, rect, {
+        onAccept: async () => {
+          hidePopup(popup);
+          try {
+            await api.deleteAnnotation(annotationId);
+            removeElementHighlight(annotationId);
+            await refreshCacheAndBadge();
+          } catch (err) {
+            console.error('[review-loop] Failed to accept element annotation:', err);
+            showToast(shadowRoot, 'Failed to accept annotation');
+          }
+        },
+        onReopen: async (message?: string) => {
+          hidePopup(popup);
+          try {
+            await api.updateAnnotation(annotationId, { status: 'open' });
+            if (message) {
+              await api.updateAnnotation(annotationId, { reply: { message, role: 'reviewer' } } as Partial<import('./types.js').Annotation>);
+            }
+            await restoreHighlights();
+          } catch (err) {
+            console.error('[review-loop] Failed to reopen element annotation:', err);
+            showToast(shadowRoot, 'Failed to reopen annotation');
+          }
+        },
+        onCancel: () => hidePopup(popup),
+      }, latestReply);
+    } else {
+      // status === 'open'
+      showEditElementPopup(popup, description, annotation.note, rect, {
+        onSave: async (newNote) => {
+          hidePopup(popup);
+          try {
+            await api.updateAnnotation(annotationId, { note: newNote });
+            await refreshCacheAndBadge();
+          } catch (err) {
+            console.error('[review-loop] Failed to update element annotation:', err);
+            showToast(shadowRoot, 'Failed to update annotation');
+          }
+        },
+        onCancel: () => hidePopup(popup),
+        onDelete: async () => {
+          hidePopup(popup);
+          removeElementHighlight(annotationId);
+          try {
+            await api.deleteAnnotation(annotationId);
+            await refreshCacheAndBadge();
+          } catch (err) {
+            console.error('[review-loop] Failed to delete element annotation:', err);
+            showToast(shadowRoot, 'Failed to delete annotation');
+          }
+        },
+      });
+    }
   }
 
   // --- Helpers ---
