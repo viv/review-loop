@@ -136,7 +136,7 @@ Claude Code reads `.mcp.json` on startup and discovers the annotation tools auto
 1. Start your dev server and browse your site
 2. **Select text** — a popup appears to add a note about what needs changing
 3. **Alt+click elements** — annotate cards, images, buttons, or layout sections
-4. **Add page notes** for broader feedback (via the panel or `Cmd/Ctrl+Shift+N`)
+4. **Add page notes** for broader feedback via the panel
 5. Your agent reads the annotations via MCP and starts working
 6. Check the **slide-out panel** (click the FAB or `Cmd/Ctrl+Shift+.`) to see agent replies and status updates
 
@@ -203,7 +203,7 @@ See [MCP Setup Guide](docs/guides/mcp-setup.md) for detailed setup and [MCP Tool
 
 ## Markdown Export
 
-For agents that don't support MCP, or for sharing feedback outside agent workflows, a Markdown export is available via keyboard shortcut (`Cmd/Ctrl+Shift+E`) or the MCP `get_export` tool.
+For agents that don't support MCP, or for sharing feedback outside agent workflows, a Markdown export is available via the MCP `get_export` tool or the "Copy All" button in the panel.
 
 The export groups annotations by page:
 

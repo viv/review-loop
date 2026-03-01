@@ -1494,7 +1494,7 @@ Page notes are free-text notes associated with a page URL (not with a specific t
 
 ### 11.2 CRUD Operations
 
-- **Create**: Click "+ Note" button in panel header, or use `Cmd/Ctrl+Shift+N` shortcut. Opens a textarea form at the top of the content area. Save sends `POST /page-notes`. The "+ Note" button acts as a toggle: if the add-note form is already visible, clicking "+ Note" again dismisses it without creating a note.
+- **Create**: Click "+ Note" button in panel header. Opens a textarea form at the top of the content area. Save sends `POST /page-notes`. The "+ Note" button acts as a toggle: if the add-note form is already visible, clicking "+ Note" again dismisses it without creating a note.
 - **Edit**: Click "Edit" button on a page note item. Replaces the item with an inline textarea form. Save sends `PATCH /page-notes/:id`.
 - **Delete**: Click "Delete" button on a page note item. Immediately sends `DELETE /page-notes/:id` (no confirmation required, unlike Clear All).
 - **Empty notes**: If the user tries to save an empty/whitespace-only note, the form is dismissed without creating a note.
@@ -1866,8 +1866,6 @@ The following accessibility features are not yet implemented:
 | Click "Clear All" in panel | Confirmation step, then deletes all | 6.2.5 |
 | Press Escape | Dismiss popup (priority) or close panel | 10.4 |
 | Press Cmd/Ctrl+Shift+. | Toggle panel | 10.1 |
-| Press Cmd/Ctrl+Shift+E | Export to clipboard, show toast | 10.1, 9.3 |
-| Press Cmd/Ctrl+Shift+N | Open panel and add-note form | 10.1, 11.2 |
 | Page reload | Highlights restored from server (text + element) | 8.4, 8.5.4, 8.7 |
 | Navigate to different page | Badge updates, highlights re-applied | 12.2 |
 | Agent calls `address_annotation` MCP tool | Annotation status set to addressed; store poller detects fingerprint change within 2s, restores highlights and refreshes panel if open | 4.3.2, 3.2.5, 5.7 |

@@ -54,6 +54,26 @@ describe('createFab', () => {
     expect(badge).not.toBeNull();
     expect(badge.className).toContain('air-fab__badge');
   });
+
+  it('hides badge on click-to-open when count > 0', () => {
+    const fab = createFab(shadowRoot, vi.fn());
+    updateBadge(fab.badge, 3);
+    expect(fab.badge.classList.contains('air-fab__badge--hidden')).toBe(false);
+
+    fab.button.click(); // open
+
+    expect(fab.badge.classList.contains('air-fab__badge--hidden')).toBe(true);
+  });
+
+  it('restores badge on click-to-close when count > 0', () => {
+    const fab = createFab(shadowRoot, vi.fn());
+    updateBadge(fab.badge, 3);
+    fab.button.click(); // open → badge hidden
+
+    fab.button.click(); // close
+
+    expect(fab.badge.classList.contains('air-fab__badge--hidden')).toBe(false);
+  });
 });
 
 describe('openFab', () => {
@@ -74,6 +94,16 @@ describe('openFab', () => {
 
     expect(fab.button.classList.contains('air-fab--open')).toBe(true);
     expect(fab.button.getAttribute('data-air-state')).toBe('open');
+  });
+
+  it('hides the badge when opening, even if count > 0', () => {
+    const fab = createFab(shadowRoot, vi.fn());
+    updateBadge(fab.badge, 5);
+    expect(fab.badge.classList.contains('air-fab__badge--hidden')).toBe(false);
+
+    openFab(fab);
+
+    expect(fab.badge.classList.contains('air-fab__badge--hidden')).toBe(true);
   });
 });
 
@@ -97,12 +127,33 @@ describe('resetFab', () => {
     expect(fab.button.classList.contains('air-fab--open')).toBe(false);
     expect(fab.button.getAttribute('data-air-state')).toBe('closed');
   });
+
+  it('restores badge visibility on close when count > 0', () => {
+    const fab = createFab(shadowRoot, vi.fn());
+    updateBadge(fab.badge, 5);
+    openFab(fab);
+    expect(fab.badge.classList.contains('air-fab__badge--hidden')).toBe(true);
+
+    resetFab(fab);
+
+    expect(fab.badge.classList.contains('air-fab__badge--hidden')).toBe(false);
+  });
+
+  it('keeps badge hidden on close when count is 0', () => {
+    const fab = createFab(shadowRoot, vi.fn());
+    openFab(fab);
+
+    resetFab(fab);
+
+    expect(fab.badge.classList.contains('air-fab__badge--hidden')).toBe(true);
+  });
 });
 
 describe('updateBadge', () => {
-  function createBadgeWithParent(): HTMLSpanElement {
+  function createBadgeWithParent(open = false): HTMLSpanElement {
     const button = document.createElement('button');
     button.setAttribute('aria-label', 'Toggle inline review panel');
+    if (open) button.setAttribute('data-air-state', 'open');
     const badge = document.createElement('span');
     badge.className = 'air-fab__badge air-fab__badge--hidden';
     button.appendChild(badge);
@@ -150,5 +201,13 @@ describe('updateBadge', () => {
     updateBadge(badge, 0);
 
     expect(badge.parentElement!.getAttribute('aria-label')).toBe('Toggle inline review panel');
+  });
+
+  it('keeps badge hidden when FAB is open, even with count > 0', () => {
+    const badge = createBadgeWithParent(true);
+
+    updateBadge(badge, 5);
+
+    expect(badge.classList.contains('air-fab__badge--hidden')).toBe(true);
   });
 });

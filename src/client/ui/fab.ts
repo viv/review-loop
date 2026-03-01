@@ -53,6 +53,12 @@ export function createFab(shadowRoot: ShadowRoot, onToggle: () => void): FabElem
     setIcon(button, isOpen ? PLUS_PATH : CLIPBOARD_PATH);
     button.classList.toggle('air-fab--open', isOpen);
     button.setAttribute('data-air-state', isOpen ? 'open' : 'closed');
+    if (isOpen) {
+      badge.classList.add('air-fab__badge--hidden');
+    } else {
+      const count = parseInt(badge.textContent ?? '0', 10);
+      badge.classList.toggle('air-fab__badge--hidden', count === 0);
+    }
     onToggle();
   });
 
@@ -66,6 +72,9 @@ export function resetFab(fab: FabElements): void {
   setIcon(fab.button, CLIPBOARD_PATH);
   fab.button.classList.remove('air-fab--open');
   fab.button.setAttribute('data-air-state', 'closed');
+  // Restore badge visibility now that the panel count is no longer shown
+  const count = parseInt(fab.badge.textContent ?? '0', 10);
+  fab.badge.classList.toggle('air-fab__badge--hidden', count === 0);
 }
 
 /** Set the FAB to its open visual state (used when panel is opened externally). */
@@ -73,15 +82,18 @@ export function openFab(fab: FabElements): void {
   setIcon(fab.button, PLUS_PATH);
   fab.button.classList.add('air-fab--open');
   fab.button.setAttribute('data-air-state', 'open');
+  // Hide badge — count is visible in the panel tabs
+  fab.badge.classList.add('air-fab__badge--hidden');
 }
 
 /** Update the badge count on the FAB and its aria-label */
 export function updateBadge(badge: HTMLSpanElement, count: number): void {
   badge.textContent = String(count);
-  badge.classList.toggle('air-fab__badge--hidden', count === 0);
+  const button = badge.parentElement;
+  const isOpen = button?.getAttribute('data-air-state') === 'open';
+  badge.classList.toggle('air-fab__badge--hidden', count === 0 || isOpen);
 
   // Update the parent button's aria-label to include the count
-  const button = badge.parentElement;
   if (button) {
     button.setAttribute('aria-label',
       count > 0
