@@ -798,8 +798,9 @@ function showReopenForm(
 
   form.appendChild(footer);
 
-  // Prevent clicks inside the form from triggering the item's click handler
+  // Prevent clicks and keystrokes inside the form from triggering the item's handlers
   form.addEventListener('click', (e) => e.stopPropagation());
+  form.addEventListener('keydown', (e) => e.stopPropagation());
 
   item.appendChild(form);
   textarea.focus();
