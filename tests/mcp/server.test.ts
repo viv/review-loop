@@ -265,6 +265,9 @@ describe('MCP server integration', () => {
   it('finish_work marks addressed and adds reply', async () => {
     await client.initialize();
 
+    // Must call start_work first — finish_work requires in_progress status
+    await client.callTool('start_work', { id: 'ann-1' });
+
     const response = await client.callTool('finish_work', {
       id: 'ann-1',
       anchorText: 'Hello World',
@@ -285,8 +288,21 @@ describe('MCP server integration', () => {
     expect(store.annotations[0].replies).toHaveLength(1);
   });
 
+  it('finish_work rejects when start_work not called first', async () => {
+    await client.initialize();
+
+    const response = await client.callTool('finish_work', { id: 'ann-2' });
+    const result = response.result as { content: Array<{ type: string; text: string }>; isError: boolean };
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('start_work');
+  });
+
   it('finish_work works with only required params', async () => {
     await client.initialize();
+
+    // Must call start_work first
+    await client.callTool('start_work', { id: 'ann-2' });
 
     const response = await client.callTool('finish_work', { id: 'ann-2' });
     const result = response.result as { content: Array<{ type: string; text: string }> };

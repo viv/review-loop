@@ -36,7 +36,7 @@ export async function startWorkHandler(
 export function register(server: McpServer, storage: ReviewStorage): void {
   server.tool(
     'start_work',
-    'Start working on an annotation. Returns the full annotation detail and atomically sets its status to "in_progress" so the browser UI shows a working indicator instead of an orphan warning during code edits. This is step 2 of the agent workflow: list_annotations → start_work → finish_work.',
+    'Start working on an annotation. Returns the full annotation detail and atomically sets its status to "in_progress" so the browser UI shows a working indicator instead of an orphan warning during code edits. IMPORTANT: You MUST call this BEFORE making any source code changes for the annotation. finish_work will reject if start_work was not called first. This is step 2 of the agent workflow: list_annotations → start_work → (edit code) → finish_work.',
     {
       id: z.string().min(1).describe('The annotation ID to start working on'),
     },

@@ -31,7 +31,7 @@ export async function listAnnotationsHandler(
 export function register(server: McpServer, storage: ReviewStorage): void {
   server.tool(
     'list_annotations',
-    'List all review feedback — text annotations, element annotations, and page notes — in a single call. Returns structured JSON with all fields (IDs, status, selectors, text ranges). This is step 1 of the agent workflow: list_annotations → start_work → finish_work.',
+    'List all review feedback — text annotations, element annotations, and page notes — in a single call. Returns structured JSON with all fields (IDs, status, selectors, text ranges). This is step 1 of the agent workflow: list_annotations → start_work → (edit code) → finish_work. IMPORTANT: Do not edit source files based on this listing alone — call start_work on each annotation before making any changes.',
     {
       pageUrl: z.string().optional().describe('Filter by page URL path (e.g. "/about")'),
       status: z.enum(['open', 'in_progress', 'addressed']).optional().describe('Filter annotations by lifecycle status'),

@@ -24,12 +24,40 @@ describe('finish_work handler', () => {
     if (existsSync(TEST_FILE)) unlinkSync(TEST_FILE);
   });
 
-  // ── Basic addressed behaviour ──────────────────────────────────────
+  // ── Workflow enforcement ──────────────────────────────────────────
 
-  it('marks annotation as addressed', async () => {
+  it('rejects when annotation is still open (start_work not called)', async () => {
     const store: ReviewStore = {
       ...createEmptyStore(),
       annotations: [makeTextAnnotation('ann1', '/', 'fix this')],
+    };
+    await storage.write(store);
+
+    const result = await finishWorkHandler(storage, { id: 'ann1' });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('start_work');
+  });
+
+  it('rejects when annotation is already addressed', async () => {
+    const store: ReviewStore = {
+      ...createEmptyStore(),
+      annotations: [{ ...makeTextAnnotation('ann1', '/', 'fix this'), status: 'addressed' as const, addressedAt: '2026-01-15T00:00:00.000Z' }],
+    };
+    await storage.write(store);
+
+    const result = await finishWorkHandler(storage, { id: 'ann1' });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('start_work');
+  });
+
+  // ── Basic addressed behaviour ──────────────────────────────────────
+
+  it('marks in_progress annotation as addressed', async () => {
+    const store: ReviewStore = {
+      ...createEmptyStore(),
+      annotations: [{ ...makeTextAnnotation('ann1', '/', 'fix this'), status: 'in_progress' as const, inProgressAt: '2026-01-15T00:00:00.000Z' }],
     };
     await storage.write(store);
 
@@ -42,7 +70,7 @@ describe('finish_work handler', () => {
   it('sets addressedAt timestamp', async () => {
     const store: ReviewStore = {
       ...createEmptyStore(),
-      annotations: [makeTextAnnotation('ann1', '/', 'fix this')],
+      annotations: [{ ...makeTextAnnotation('ann1', '/', 'fix this'), status: 'in_progress' as const, inProgressAt: '2026-01-15T00:00:00.000Z' }],
     };
     await storage.write(store);
 
@@ -56,7 +84,7 @@ describe('finish_work handler', () => {
   it('updates updatedAt timestamp', async () => {
     const store: ReviewStore = {
       ...createEmptyStore(),
-      annotations: [makeTextAnnotation('ann1', '/', 'fix this')],
+      annotations: [{ ...makeTextAnnotation('ann1', '/', 'fix this'), status: 'in_progress' as const, inProgressAt: '2026-01-15T00:00:00.000Z' }],
     };
     await storage.write(store);
 
@@ -69,7 +97,7 @@ describe('finish_work handler', () => {
   it('persists the status change to the JSON file', async () => {
     const store: ReviewStore = {
       ...createEmptyStore(),
-      annotations: [makeTextAnnotation('ann1', '/', 'fix this')],
+      annotations: [{ ...makeTextAnnotation('ann1', '/', 'fix this'), status: 'in_progress' as const, inProgressAt: '2026-01-15T00:00:00.000Z' }],
     };
     await storage.write(store);
 
@@ -85,7 +113,7 @@ describe('finish_work handler', () => {
   it('sets replacedText when anchorText is provided on text annotation', async () => {
     const store: ReviewStore = {
       ...createEmptyStore(),
-      annotations: [makeTextAnnotation('ann1', '/', 'old text', 'fix this')],
+      annotations: [{ ...makeTextAnnotation('ann1', '/', 'old text', 'fix this'), status: 'in_progress' as const, inProgressAt: '2026-01-15T00:00:00.000Z' }],
     };
     await storage.write(store);
 
@@ -99,7 +127,7 @@ describe('finish_work handler', () => {
   it('returns error when anchorText is used on element annotation', async () => {
     const store: ReviewStore = {
       ...createEmptyStore(),
-      annotations: [makeElementAnnotation('el1', '/', 'fix element')],
+      annotations: [{ ...makeElementAnnotation('el1', '/', 'fix element'), status: 'in_progress' as const, inProgressAt: '2026-01-15T00:00:00.000Z' }],
     };
     await storage.write(store);
 
@@ -112,7 +140,7 @@ describe('finish_work handler', () => {
   it('returns error when anchorText is empty', async () => {
     const store: ReviewStore = {
       ...createEmptyStore(),
-      annotations: [makeTextAnnotation('ann1', '/', 'fix this')],
+      annotations: [{ ...makeTextAnnotation('ann1', '/', 'fix this'), status: 'in_progress' as const, inProgressAt: '2026-01-15T00:00:00.000Z' }],
     };
     await storage.write(store);
 
@@ -125,7 +153,7 @@ describe('finish_work handler', () => {
   it('persists anchorText as replacedText in the JSON file', async () => {
     const store: ReviewStore = {
       ...createEmptyStore(),
-      annotations: [makeTextAnnotation('ann1', '/', 'old text', 'fix this')],
+      annotations: [{ ...makeTextAnnotation('ann1', '/', 'old text', 'fix this'), status: 'in_progress' as const, inProgressAt: '2026-01-15T00:00:00.000Z' }],
     };
     await storage.write(store);
 
@@ -144,7 +172,7 @@ describe('finish_work handler', () => {
   it('adds agent reply when message is provided', async () => {
     const store: ReviewStore = {
       ...createEmptyStore(),
-      annotations: [makeTextAnnotation('ann1', '/', 'fix this')],
+      annotations: [{ ...makeTextAnnotation('ann1', '/', 'fix this'), status: 'in_progress' as const, inProgressAt: '2026-01-15T00:00:00.000Z' }],
     };
     await storage.write(store);
 
@@ -161,6 +189,8 @@ describe('finish_work handler', () => {
       ...createEmptyStore(),
       annotations: [{
         ...makeTextAnnotation('ann1', '/', 'fix this'),
+        status: 'in_progress' as const,
+        inProgressAt: '2026-01-15T00:00:00.000Z',
         replies: [{ message: 'Earlier reply', createdAt: '2026-01-01T00:00:00.000Z' }],
       }],
     };
@@ -177,7 +207,7 @@ describe('finish_work handler', () => {
   it('returns error when message is empty', async () => {
     const store: ReviewStore = {
       ...createEmptyStore(),
-      annotations: [makeTextAnnotation('ann1', '/', 'fix this')],
+      annotations: [{ ...makeTextAnnotation('ann1', '/', 'fix this'), status: 'in_progress' as const, inProgressAt: '2026-01-15T00:00:00.000Z' }],
     };
     await storage.write(store);
 
@@ -190,7 +220,7 @@ describe('finish_work handler', () => {
   it('persists the reply to the JSON file', async () => {
     const store: ReviewStore = {
       ...createEmptyStore(),
-      annotations: [makeTextAnnotation('ann1', '/', 'fix this')],
+      annotations: [{ ...makeTextAnnotation('ann1', '/', 'fix this'), status: 'in_progress' as const, inProgressAt: '2026-01-15T00:00:00.000Z' }],
     };
     await storage.write(store);
 
@@ -206,7 +236,7 @@ describe('finish_work handler', () => {
   it('handles anchorText and message together', async () => {
     const store: ReviewStore = {
       ...createEmptyStore(),
-      annotations: [makeTextAnnotation('ann1', '/', 'old text', 'fix this')],
+      annotations: [{ ...makeTextAnnotation('ann1', '/', 'old text', 'fix this'), status: 'in_progress' as const, inProgressAt: '2026-01-15T00:00:00.000Z' }],
     };
     await storage.write(store);
 
@@ -226,7 +256,7 @@ describe('finish_work handler', () => {
   it('works with no optional parameters', async () => {
     const store: ReviewStore = {
       ...createEmptyStore(),
-      annotations: [makeTextAnnotation('ann1', '/', 'fix this')],
+      annotations: [{ ...makeTextAnnotation('ann1', '/', 'fix this'), status: 'in_progress' as const, inProgressAt: '2026-01-15T00:00:00.000Z' }],
     };
     await storage.write(store);
 
@@ -250,7 +280,7 @@ describe('finish_work handler', () => {
   it('works with element annotations (no anchorText)', async () => {
     const store: ReviewStore = {
       ...createEmptyStore(),
-      annotations: [makeElementAnnotation('el1', '/', 'fix element')],
+      annotations: [{ ...makeElementAnnotation('el1', '/', 'fix element'), status: 'in_progress' as const, inProgressAt: '2026-01-15T00:00:00.000Z' }],
     };
     await storage.write(store);
 
@@ -265,7 +295,7 @@ describe('finish_work handler', () => {
   it('sets reply createdAt to a valid ISO 8601 timestamp', async () => {
     const store: ReviewStore = {
       ...createEmptyStore(),
-      annotations: [makeTextAnnotation('ann1', '/', 'fix this')],
+      annotations: [{ ...makeTextAnnotation('ann1', '/', 'fix this'), status: 'in_progress' as const, inProgressAt: '2026-01-15T00:00:00.000Z' }],
     };
     await storage.write(store);
 

@@ -2,7 +2,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ReviewStorage } from '../../server/storage.js';
 import type { ToolResult, ErrorResult } from '../types.js';
-import { isTextAnnotation } from '../../shared/types.js';
+import { isTextAnnotation, getAnnotationStatus } from '../../shared/types.js';
 
 export async function finishWorkHandler(
   storage: ReviewStorage,
@@ -27,6 +27,14 @@ export async function finishWorkHandler(
       const annotation = s.annotations.find(a => a.id === params.id);
       if (!annotation) {
         throw new Error(`Annotation with ID "${params.id}" not found`);
+      }
+
+      const currentStatus = getAnnotationStatus(annotation);
+      if (currentStatus !== 'in_progress') {
+        throw new Error(
+          `Annotation "${params.id}" has status "${currentStatus}" — you must call start_work before finish_work. ` +
+          `This signals to the reviewer that you are working on it and prevents orphan warnings in the browser UI.`
+        );
       }
 
       const now = new Date().toISOString();
@@ -70,7 +78,7 @@ export async function finishWorkHandler(
 export function register(server: McpServer, storage: ReviewStorage): void {
   server.tool(
     'finish_work',
-    'Finish working on an annotation. Marks it as "addressed", optionally updates the anchor text (so the browser UI can re-locate it), and optionally adds an agent reply explaining what was done. This is step 3 of the agent workflow: list_annotations → start_work → finish_work.',
+    'Finish working on an annotation. Marks it as "addressed", optionally updates the anchor text (so the browser UI can re-locate it), and optionally adds an agent reply explaining what was done. Requires start_work to have been called first (will reject otherwise). This is step 3 of the agent workflow: list_annotations → start_work → (edit code) → finish_work.',
     {
       id: z.string().min(1).describe('The annotation ID to mark as finished'),
       anchorText: z.string().optional().describe('The new text that replaced the original annotated text (text annotations only). Enables the browser UI to re-locate the annotation after the text has changed.'),
