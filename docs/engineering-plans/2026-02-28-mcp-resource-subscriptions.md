@@ -53,7 +53,7 @@ The existing tools remain unchanged. Resources are additive.
 │      updated for all subscribed URIs            │
 │                                                 │
 │  Tools: (unchanged, still the primary API)      │
-│    list_annotations, get_annotation, etc.       │
+│    list_annotations, start_work, finish_work    │
 └─────────────────────────────────────────────────┘
                    │
                    ▼
@@ -310,6 +310,18 @@ This is a refinement — session 2's blanket notifications work fine for most us
 
 ---
 
+## Current Workaround (Implemented)
+
+While waiting for MCP client support for `resources/subscribe`, tool descriptions now embed polling guidance that creates a self-reinforcing agent workflow loop (PR #60, commits `0a1853c` and `1e52457`):
+
+- **`list_annotations`**: "Call this at the start of your session and after each `finish_work` call"
+- **`finish_work`**: "After calling this, call `list_annotations(status: 'open')` to check for remaining or newly reopened annotations"
+- **`start_work`**: "You MUST call this BEFORE making any source code changes" (enforced server-side — `finish_work` rejects if not `in_progress`)
+
+This means agents following tool descriptions will loop through: `list_annotations` → `start_work` → edit → `finish_work` → `list_annotations` → ... until no open annotations remain.
+
+**Limitations**: Agents won't discover annotations added *after* they finish their loop. True push notifications via `resources/subscribe` remain the ideal solution for real-time awareness of new annotations.
+
 ## Key Design Decisions
 
 1. **Resources are additive** — existing tools stay as the primary agent API. Resources provide a read-only alternative that unlocks the subscription pattern.
@@ -322,7 +334,7 @@ This is a refinement — session 2's blanket notifications work fine for most us
 
 5. **No new dependencies for session 1-2** — `fs.watch` is built into Node.js. Only add `chokidar` if `fs.watch` proves unreliable on macOS (it sometimes is for renames).
 
-6. **JSON resource format** — resources return `application/json` rather than markdown, because agents consuming them programmatically benefit from structured data. The existing `get_export` tool/resource can serve markdown if needed.
+6. **JSON resource format** — resources return `application/json` rather than markdown, because agents consuming them programmatically benefit from structured data.
 
 ## Client Support Status
 
