@@ -3,6 +3,8 @@ import {
   createPopup,
   showPopup,
   showEditPopup,
+  showInProgressPopup,
+  showAddressedPopup,
   hidePopup,
   isPopupVisible,
 } from '../../../src/client/ui/popup.js';
@@ -276,5 +278,274 @@ describe('popup — ARIA attributes', () => {
 
   it('has aria-label for accessibility', () => {
     expect(popup.container.getAttribute('aria-label')).toBe('Add annotation');
+  });
+});
+
+describe('popup — in_progress mode', () => {
+  let shadowRoot: ShadowRoot;
+  let popup: PopupElements;
+  const rect = new DOMRect(200, 400, 100, 20);
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    shadowRoot = host.attachShadow({ mode: 'open' });
+    popup = createPopup(shadowRoot);
+  });
+
+  it('renders read-only note text, not a textarea', () => {
+    showInProgressPopup(popup, '"some selected text"', 'Fix the typo here', rect, {
+      onCancel: vi.fn(),
+    });
+
+    // Textarea should be hidden (display: none)
+    expect(popup.textarea.style.display).toBe('none');
+
+    // Read-only note should be present
+    const noteEl = popup.container.querySelector('[data-air-el="popup-note"]');
+    expect(noteEl).not.toBeNull();
+    expect(noteEl!.textContent).toBe('Fix the typo here');
+  });
+
+  it('shows in_progress status badge', () => {
+    showInProgressPopup(popup, '"text"', 'A note', rect, {
+      onCancel: vi.fn(),
+    });
+
+    const badge = popup.container.querySelector('[data-air-el="popup-status-badge"]');
+    expect(badge).not.toBeNull();
+    expect(badge!.textContent).toContain('Agent working');
+  });
+
+  it('shows Cancel button only (no Save, no Delete)', () => {
+    showInProgressPopup(popup, '"text"', 'A note', rect, {
+      onCancel: vi.fn(),
+    });
+
+    const buttons = popup.container.querySelectorAll('.air-popup__footer button');
+    const buttonTexts = Array.from(buttons).map(b => b.textContent);
+
+    expect(buttonTexts).toContain('Cancel');
+    expect(buttonTexts).not.toContain('Save');
+    expect(buttonTexts).not.toContain('Delete');
+  });
+
+  it('Cancel button calls onCancel', () => {
+    const onCancel = vi.fn();
+    showInProgressPopup(popup, '"text"', 'A note', rect, { onCancel });
+
+    const cancelBtn = popup.container.querySelector('[data-air-el="popup-cancel"]') as HTMLButtonElement;
+    cancelBtn.click();
+
+    expect(onCancel).toHaveBeenCalledOnce();
+  });
+
+  it('shows latest agent reply when provided', () => {
+    showInProgressPopup(popup, '"text"', 'A note', rect, {
+      onCancel: vi.fn(),
+    }, { message: 'Working on it now', createdAt: '2026-03-01T12:00:00Z', role: 'agent' });
+
+    const reply = popup.container.querySelector('[data-air-el="popup-reply"]');
+    expect(reply).not.toBeNull();
+    expect(reply!.textContent).toContain('Working on it now');
+  });
+
+  it('does not show reply block when no reply provided', () => {
+    showInProgressPopup(popup, '"text"', 'A note', rect, {
+      onCancel: vi.fn(),
+    });
+
+    const reply = popup.container.querySelector('[data-air-el="popup-reply"]');
+    expect(reply).toBeNull();
+  });
+
+  it('makes popup visible', () => {
+    showInProgressPopup(popup, '"text"', 'A note', rect, {
+      onCancel: vi.fn(),
+    });
+
+    expect(isPopupVisible(popup)).toBe(true);
+  });
+});
+
+describe('popup — addressed mode', () => {
+  let shadowRoot: ShadowRoot;
+  let popup: PopupElements;
+  const rect = new DOMRect(200, 400, 100, 20);
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    shadowRoot = host.attachShadow({ mode: 'open' });
+    popup = createPopup(shadowRoot);
+  });
+
+  it('renders read-only note text, not a textarea', () => {
+    showAddressedPopup(popup, '"some text"', 'Change this colour', rect, {
+      onAccept: vi.fn(),
+      onReopen: vi.fn(),
+      onCancel: vi.fn(),
+    });
+
+    expect(popup.textarea.style.display).toBe('none');
+
+    const noteEl = popup.container.querySelector('[data-air-el="popup-note"]');
+    expect(noteEl).not.toBeNull();
+    expect(noteEl!.textContent).toBe('Change this colour');
+  });
+
+  it('shows addressed status badge', () => {
+    showAddressedPopup(popup, '"text"', 'A note', rect, {
+      onAccept: vi.fn(),
+      onReopen: vi.fn(),
+      onCancel: vi.fn(),
+    });
+
+    const badge = popup.container.querySelector('[data-air-el="popup-status-badge"]');
+    expect(badge).not.toBeNull();
+    expect(badge!.textContent).toContain('Addressed');
+  });
+
+  it('shows Accept, Reopen, and Cancel buttons (no Save, no Delete)', () => {
+    showAddressedPopup(popup, '"text"', 'A note', rect, {
+      onAccept: vi.fn(),
+      onReopen: vi.fn(),
+      onCancel: vi.fn(),
+    });
+
+    const buttons = popup.container.querySelectorAll('.air-popup__footer button');
+    const buttonTexts = Array.from(buttons).map(b => b.textContent);
+
+    expect(buttonTexts).toContain('Accept');
+    expect(buttonTexts).toContain('Reopen');
+    expect(buttonTexts).toContain('Cancel');
+    expect(buttonTexts).not.toContain('Save');
+    expect(buttonTexts).not.toContain('Delete');
+  });
+
+  it('Accept button calls onAccept', () => {
+    const onAccept = vi.fn();
+    showAddressedPopup(popup, '"text"', 'A note', rect, {
+      onAccept,
+      onReopen: vi.fn(),
+      onCancel: vi.fn(),
+    });
+
+    const acceptBtn = popup.container.querySelector('[data-air-el="popup-accept"]') as HTMLButtonElement;
+    acceptBtn.click();
+
+    expect(onAccept).toHaveBeenCalledOnce();
+  });
+
+  it('Reopen button shows inline reopen form', () => {
+    showAddressedPopup(popup, '"text"', 'A note', rect, {
+      onAccept: vi.fn(),
+      onReopen: vi.fn(),
+      onCancel: vi.fn(),
+    });
+
+    const reopenBtn = popup.container.querySelector('[data-air-el="popup-reopen"]') as HTMLButtonElement;
+    reopenBtn.click();
+
+    const form = popup.container.querySelector('[data-air-el="popup-reopen-form"]');
+    expect(form).not.toBeNull();
+
+    const textarea = form!.querySelector('[data-air-el="popup-reopen-textarea"]');
+    expect(textarea).not.toBeNull();
+  });
+
+  it('Reopen form submit calls onReopen with message', () => {
+    const onReopen = vi.fn();
+    showAddressedPopup(popup, '"text"', 'A note', rect, {
+      onAccept: vi.fn(),
+      onReopen,
+      onCancel: vi.fn(),
+    });
+
+    // Open the reopen form
+    const reopenBtn = popup.container.querySelector('[data-air-el="popup-reopen"]') as HTMLButtonElement;
+    reopenBtn.click();
+
+    // Type a message and submit
+    const textarea = popup.container.querySelector('[data-air-el="popup-reopen-textarea"]') as HTMLTextAreaElement;
+    textarea.value = 'Not quite right, please adjust';
+
+    const submitBtn = popup.container.querySelector('[data-air-el="popup-reopen-submit"]') as HTMLButtonElement;
+    submitBtn.click();
+
+    expect(onReopen).toHaveBeenCalledWith('Not quite right, please adjust');
+  });
+
+  it('Reopen form submit calls onReopen with undefined when message is empty', () => {
+    const onReopen = vi.fn();
+    showAddressedPopup(popup, '"text"', 'A note', rect, {
+      onAccept: vi.fn(),
+      onReopen,
+      onCancel: vi.fn(),
+    });
+
+    const reopenBtn = popup.container.querySelector('[data-air-el="popup-reopen"]') as HTMLButtonElement;
+    reopenBtn.click();
+
+    const submitBtn = popup.container.querySelector('[data-air-el="popup-reopen-submit"]') as HTMLButtonElement;
+    submitBtn.click();
+
+    expect(onReopen).toHaveBeenCalledWith(undefined);
+  });
+
+  it('Reopen form cancel removes the form', () => {
+    showAddressedPopup(popup, '"text"', 'A note', rect, {
+      onAccept: vi.fn(),
+      onReopen: vi.fn(),
+      onCancel: vi.fn(),
+    });
+
+    const reopenBtn = popup.container.querySelector('[data-air-el="popup-reopen"]') as HTMLButtonElement;
+    reopenBtn.click();
+
+    expect(popup.container.querySelector('[data-air-el="popup-reopen-form"]')).not.toBeNull();
+
+    const cancelFormBtn = popup.container.querySelector('[data-air-el="popup-reopen-cancel"]') as HTMLButtonElement;
+    cancelFormBtn.click();
+
+    expect(popup.container.querySelector('[data-air-el="popup-reopen-form"]')).toBeNull();
+  });
+
+  it('shows latest agent reply when provided', () => {
+    showAddressedPopup(popup, '"text"', 'A note', rect, {
+      onAccept: vi.fn(),
+      onReopen: vi.fn(),
+      onCancel: vi.fn(),
+    }, { message: 'Changed colour to blue', createdAt: '2026-03-01T12:00:00Z', role: 'agent' });
+
+    const reply = popup.container.querySelector('[data-air-el="popup-reply"]');
+    expect(reply).not.toBeNull();
+    expect(reply!.textContent).toContain('Changed colour to blue');
+  });
+
+  it('Cancel button calls onCancel', () => {
+    const onCancel = vi.fn();
+    showAddressedPopup(popup, '"text"', 'A note', rect, {
+      onAccept: vi.fn(),
+      onReopen: vi.fn(),
+      onCancel,
+    });
+
+    const cancelBtn = popup.container.querySelector('[data-air-el="popup-cancel"]') as HTMLButtonElement;
+    cancelBtn.click();
+
+    expect(onCancel).toHaveBeenCalledOnce();
+  });
+
+  it('makes popup visible', () => {
+    showAddressedPopup(popup, '"text"', 'A note', rect, {
+      onAccept: vi.fn(),
+      onReopen: vi.fn(),
+      onCancel: vi.fn(),
+    });
+
+    expect(isPopupVisible(popup)).toBe(true);
   });
 });

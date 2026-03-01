@@ -2,13 +2,26 @@
  * Selection annotation popup.
  *
  * Appears near text selection with a textarea for notes.
- * Supports create mode (save/cancel) and edit mode (save/cancel/delete).
+ * Supports create mode (save/cancel), edit mode (save/cancel/delete),
+ * in_progress mode (read-only, cancel), and addressed mode (accept/reopen/cancel).
  */
+
+import type { AgentReply } from '../types.js';
 
 export interface PopupCallbacks {
   onSave: (note: string) => void;
   onCancel: () => void;
   onDelete?: () => void;
+}
+
+export interface InProgressCallbacks {
+  onCancel: () => void;
+}
+
+export interface AddressedCallbacks {
+  onAccept: () => void;
+  onReopen: (message?: string) => void;
+  onCancel: () => void;
 }
 
 export interface PopupElements {
@@ -204,12 +217,87 @@ export function showEditElementPopup(
 }
 
 /**
+ * Show the popup in read-only mode for an in_progress annotation.
+ * Displays the note as static text, an "Agent working…" badge, optional latest reply,
+ * and a Cancel button only.
+ */
+export function showInProgressPopup(
+  popup: PopupElements,
+  previewText: string,
+  note: string,
+  rect: DOMRect,
+  callbacks: InProgressCallbacks,
+  latestReply?: AgentReply,
+): void {
+  previouslyFocusedElement = document.activeElement as HTMLElement | null;
+  const { container, textarea, selectedTextPreview } = popup;
+
+  // Set preview text (already formatted by caller — may have quotes or not)
+  const truncated = previewText.length > MAX_PREVIEW_LENGTH
+    ? previewText.slice(0, MAX_PREVIEW_LENGTH) + '…'
+    : previewText;
+  selectedTextPreview.textContent = truncated;
+
+  positionPopup(container, rect);
+
+  // Hide textarea, show read-only body
+  textarea.style.display = 'none';
+  rebuildReadOnlyBody(container, note, '⏳ Agent working…', 'in-progress', latestReply);
+
+  // Footer: Cancel only
+  rebuildInProgressFooter(container, callbacks.onCancel);
+
+  container.classList.add('air-popup--visible');
+  container.setAttribute('data-air-state', 'visible');
+}
+
+/**
+ * Show the popup in read-only mode for an addressed annotation.
+ * Displays the note as static text, an "Addressed" badge, optional latest reply,
+ * and Accept/Reopen/Cancel buttons. Reopen shows an inline form.
+ */
+export function showAddressedPopup(
+  popup: PopupElements,
+  previewText: string,
+  note: string,
+  rect: DOMRect,
+  callbacks: AddressedCallbacks,
+  latestReply?: AgentReply,
+): void {
+  previouslyFocusedElement = document.activeElement as HTMLElement | null;
+  const { container, textarea, selectedTextPreview } = popup;
+
+  const truncated = previewText.length > MAX_PREVIEW_LENGTH
+    ? previewText.slice(0, MAX_PREVIEW_LENGTH) + '…'
+    : previewText;
+  selectedTextPreview.textContent = truncated;
+
+  positionPopup(container, rect);
+
+  // Hide textarea, show read-only body
+  textarea.style.display = 'none';
+  rebuildReadOnlyBody(container, note, '🔧 Addressed', 'addressed', latestReply);
+
+  // Footer: Accept, Reopen, Cancel
+  rebuildAddressedFooter(container, callbacks);
+
+  container.classList.add('air-popup--visible');
+  container.setAttribute('data-air-state', 'visible');
+}
+
+/**
  * Hide the popup.
  */
 export function hidePopup(popup: PopupElements): void {
   popup.container.classList.remove('air-popup--visible');
   popup.container.setAttribute('data-air-state', 'hidden');
   popup.textarea.value = '';
+
+  // Clean up read-only elements added by status-aware modes
+  popup.textarea.style.display = '';
+  for (const el of popup.container.querySelectorAll('[data-air-el="popup-note"], [data-air-el="popup-status-badge"], [data-air-el="popup-reply"], [data-air-el="popup-reopen-form"]')) {
+    el.remove();
+  }
 
   // Return focus to the element that was focused before the popup opened
   if (previouslyFocusedElement && previouslyFocusedElement.isConnected) {
@@ -289,4 +377,150 @@ function rebuildFooter(
   saveBtn.textContent = 'Save';
   saveBtn.addEventListener('click', () => callbacks.onSave(textarea.value));
   footer.appendChild(saveBtn);
+}
+
+/**
+ * Insert read-only note text, a status badge, and optional latest reply
+ * into the popup body (between preview and footer). Removes any previous
+ * read-only elements first.
+ */
+function rebuildReadOnlyBody(
+  container: HTMLElement,
+  note: string,
+  badgeText: string,
+  badgeType: 'in-progress' | 'addressed',
+  latestReply?: AgentReply,
+): void {
+  // Remove any previous read-only elements
+  for (const el of container.querySelectorAll('[data-air-el="popup-note"], [data-air-el="popup-status-badge"], [data-air-el="popup-reply"]')) {
+    el.remove();
+  }
+
+  const footer = container.querySelector('.air-popup__footer')!;
+
+  // Status badge
+  const badge = document.createElement('div');
+  badge.setAttribute('data-air-el', 'popup-status-badge');
+  badge.className = badgeType === 'addressed'
+    ? 'air-annotation-item__addressed-badge'
+    : 'air-annotation-item__in-progress-badge';
+  badge.textContent = badgeText;
+  container.insertBefore(badge, footer);
+
+  // Read-only note
+  const noteEl = document.createElement('div');
+  noteEl.setAttribute('data-air-el', 'popup-note');
+  noteEl.className = 'air-popup__note';
+  noteEl.textContent = note;
+  container.insertBefore(noteEl, footer);
+
+  // Latest reply
+  if (latestReply) {
+    const replyBlock = document.createElement('div');
+    replyBlock.setAttribute('data-air-el', 'popup-reply');
+    replyBlock.className = 'air-annotation-item__reply';
+
+    const prefix = document.createElement('div');
+    prefix.className = 'air-annotation-item__reply-prefix';
+    prefix.textContent = latestReply.role === 'reviewer' ? 'Reviewer:' : 'Agent:';
+    replyBlock.appendChild(prefix);
+
+    const msg = document.createElement('div');
+    msg.textContent = latestReply.message;
+    replyBlock.appendChild(msg);
+
+    container.insertBefore(replyBlock, footer);
+  }
+}
+
+/** Footer with Cancel button only (for in_progress mode). */
+function rebuildInProgressFooter(
+  container: HTMLElement,
+  onCancel: () => void,
+): void {
+  const footer = container.querySelector('.air-popup__footer')!;
+  while (footer.firstChild) footer.removeChild(footer.firstChild);
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'air-popup__btn air-popup__btn--cancel';
+  cancelBtn.setAttribute('data-air-el', 'popup-cancel');
+  cancelBtn.textContent = 'Cancel';
+  cancelBtn.addEventListener('click', () => onCancel());
+  footer.appendChild(cancelBtn);
+}
+
+/** Footer with Accept, Reopen, Cancel buttons (for addressed mode). */
+function rebuildAddressedFooter(
+  container: HTMLElement,
+  callbacks: AddressedCallbacks,
+): void {
+  const footer = container.querySelector('.air-popup__footer')!;
+  while (footer.firstChild) footer.removeChild(footer.firstChild);
+
+  const acceptBtn = document.createElement('button');
+  acceptBtn.className = 'air-popup__btn air-popup__btn--accept';
+  acceptBtn.setAttribute('data-air-el', 'popup-accept');
+  acceptBtn.textContent = 'Accept';
+  acceptBtn.addEventListener('click', () => callbacks.onAccept());
+  footer.appendChild(acceptBtn);
+
+  const reopenBtn = document.createElement('button');
+  reopenBtn.className = 'air-popup__btn air-popup__btn--cancel';
+  reopenBtn.setAttribute('data-air-el', 'popup-reopen');
+  reopenBtn.textContent = 'Reopen';
+  reopenBtn.addEventListener('click', () => showReopenForm(container, callbacks.onReopen));
+  footer.appendChild(reopenBtn);
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'air-popup__btn air-popup__btn--cancel';
+  cancelBtn.setAttribute('data-air-el', 'popup-cancel');
+  cancelBtn.textContent = 'Cancel';
+  cancelBtn.addEventListener('click', () => callbacks.onCancel());
+  footer.appendChild(cancelBtn);
+}
+
+/** Inline reopen form shown inside the popup when Reopen is clicked. */
+function showReopenForm(
+  container: HTMLElement,
+  onReopen: (message?: string) => void,
+): void {
+  // Don't show multiple forms
+  if (container.querySelector('[data-air-el="popup-reopen-form"]')) return;
+
+  const form = document.createElement('div');
+  form.className = 'air-reopen-form';
+  form.setAttribute('data-air-el', 'popup-reopen-form');
+  form.style.cssText = 'padding: 8px 0; margin-top: 8px;';
+
+  const textarea = document.createElement('textarea');
+  textarea.className = 'air-popup__textarea';
+  textarea.setAttribute('data-air-el', 'popup-reopen-textarea');
+  textarea.placeholder = 'Add a follow-up note (optional)…';
+  textarea.style.minHeight = '60px';
+  form.appendChild(textarea);
+
+  const footer = document.createElement('div');
+  footer.style.cssText = 'display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px;';
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'air-popup__btn air-popup__btn--cancel';
+  cancelBtn.setAttribute('data-air-el', 'popup-reopen-cancel');
+  cancelBtn.textContent = 'Cancel';
+  cancelBtn.addEventListener('click', () => form.remove());
+  footer.appendChild(cancelBtn);
+
+  const submitBtn = document.createElement('button');
+  submitBtn.className = 'air-popup__btn air-popup__btn--save';
+  submitBtn.setAttribute('data-air-el', 'popup-reopen-submit');
+  submitBtn.textContent = 'Reopen';
+  submitBtn.addEventListener('click', () => {
+    const message = textarea.value.trim();
+    onReopen(message || undefined);
+    form.remove();
+  });
+  footer.appendChild(submitBtn);
+
+  form.appendChild(footer);
+  container.appendChild(form);
+  textarea.focus();
 }
