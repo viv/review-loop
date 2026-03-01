@@ -44,7 +44,7 @@ jobs:
 
       - name: Upload coverage report
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-node-${{ matrix.node-version }}
           path: coverage/
@@ -95,7 +95,7 @@ jobs:
       - name: Pack and upload
         run: npm pack
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: package-tarball
           path: "*.tgz"
