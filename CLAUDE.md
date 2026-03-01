@@ -133,6 +133,10 @@ git push origin main --tags
 - The `prepublishOnly` script guards against accidental local publishes
 - Version in `package.json` must match the tag or the workflow fails
 
+## Architecture Decision Records
+
+Significant architectural decisions are documented in `docs/adr/`. When implementing a change that involves a non-obvious trade-off, closes off alternatives, or would make a future contributor ask "why did you do it this way?", prompt the user to record an ADR. Reference existing ADRs in commit messages where relevant (e.g., "See: ADR-004").
+
 ## Key File Paths
 
 - `src/shared/types.ts` — canonical type definitions
@@ -149,3 +153,4 @@ git push origin main --tags
 - `src/mcp/tools/` — individual MCP tool handlers
 - `.mcp.json` — MCP auto-discovery configuration
 - `docs/spec/specification.md` — full component specification
+- `docs/adr/` — architecture decision records
