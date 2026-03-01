@@ -282,18 +282,33 @@ export const PANEL_STYLES = /* css */ `
   .air-annotation-item__reply {
     margin-top: 8px;
     padding: 8px;
-    background: #1a2a1a;
-    border-left: 3px solid #22C55E;
     border-radius: 0 4px 4px 0;
     font-size: 12px;
     color: #ccc;
   }
 
+  .air-annotation-item__reply--agent {
+    background: #1a1a2a;
+    border-left: 3px solid #60A5FA;
+  }
+
+  .air-annotation-item__reply--reviewer {
+    background: #1a2a1a;
+    border-left: 3px solid #22C55E;
+  }
+
   .air-annotation-item__reply-prefix {
     font-size: 11px;
     font-weight: 600;
-    color: #22C55E;
     margin-bottom: 2px;
+  }
+
+  .air-annotation-item__reply-prefix--agent {
+    color: #60A5FA;
+  }
+
+  .air-annotation-item__reply-prefix--reviewer {
+    color: #22C55E;
   }
 
   .air-annotation-item__reply-time {

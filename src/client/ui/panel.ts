@@ -900,13 +900,14 @@ function createStatusBadge(status: AnnotationStatus, inProgressAt?: string, addr
 
 function createReplyBlock(reply: AgentReply): HTMLDivElement {
   const isReviewer = reply.role === 'reviewer';
+  const roleModifier = isReviewer ? 'reviewer' : 'agent';
   const block = document.createElement('div');
-  block.className = 'air-annotation-item__reply';
+  block.className = `air-annotation-item__reply air-annotation-item__reply--${roleModifier}`;
   block.setAttribute('data-air-el', isReviewer ? 'reviewer-reply' : 'agent-reply');
 
   const prefix = document.createElement('div');
-  prefix.className = 'air-annotation-item__reply-prefix';
-  prefix.textContent = isReviewer ? 'Reviewer:' : 'Agent:';
+  prefix.className = `air-annotation-item__reply-prefix air-annotation-item__reply-prefix--${roleModifier}`;
+  prefix.textContent = isReviewer ? '\uD83D\uDC64 Reviewer:' : '\uD83E\uDD16 Agent:';
 
   if (reply.createdAt) {
     const time = document.createElement('span');

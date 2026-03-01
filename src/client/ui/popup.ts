@@ -416,13 +416,15 @@ function rebuildReadOnlyBody(
 
   // Latest reply
   if (latestReply) {
+    const isReviewer = latestReply.role === 'reviewer';
+    const roleModifier = isReviewer ? 'reviewer' : 'agent';
     const replyBlock = document.createElement('div');
     replyBlock.setAttribute('data-air-el', 'popup-reply');
-    replyBlock.className = 'air-annotation-item__reply';
+    replyBlock.className = `air-annotation-item__reply air-annotation-item__reply--${roleModifier}`;
 
     const prefix = document.createElement('div');
-    prefix.className = 'air-annotation-item__reply-prefix';
-    prefix.textContent = latestReply.role === 'reviewer' ? 'Reviewer:' : 'Agent:';
+    prefix.className = `air-annotation-item__reply-prefix air-annotation-item__reply-prefix--${roleModifier}`;
+    prefix.textContent = isReviewer ? '\uD83D\uDC64 Reviewer:' : '\uD83E\uDD16 Agent:';
     replyBlock.appendChild(prefix);
 
     const msg = document.createElement('div');
