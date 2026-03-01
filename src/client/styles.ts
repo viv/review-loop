@@ -251,7 +251,7 @@ export const PANEL_STYLES = /* css */ `
 
   .air-annotation-item--addressed {
     opacity: 0.85;
-    border-left: 3px solid #3B82F6;
+    border-left: 3px solid #94A3B8;
   }
 
   .air-annotation-item__addressed-badge {
@@ -260,7 +260,7 @@ export const PANEL_STYLES = /* css */ `
     gap: 4px;
     font-size: 11px;
     font-weight: 600;
-    color: #3B82F6;
+    color: #94A3B8;
     margin-bottom: 4px;
   }
 
@@ -305,7 +305,7 @@ export const PANEL_STYLES = /* css */ `
 
   .air-annotation-item--in-progress {
     opacity: 0.85;
-    border-left: 3px solid #8B5CF6;
+    border-left: 3px solid #F472B6;
   }
 
   .air-annotation-item__in-progress-badge {
@@ -314,7 +314,7 @@ export const PANEL_STYLES = /* css */ `
     gap: 4px;
     font-size: 11px;
     font-weight: 600;
-    color: #8B5CF6;
+    color: #F472B6;
     margin-bottom: 4px;
   }
 

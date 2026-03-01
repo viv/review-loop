@@ -10,8 +10,8 @@ import type { AnnotationStatus } from './types.js';
 export const HIGHLIGHT_ATTR = 'data-air-id';
 
 const HIGHLIGHT_STYLE = 'background-color: rgba(217,119,6,0.3); border-radius: 2px; cursor: pointer;';
-const IN_PROGRESS_HIGHLIGHT_STYLE = 'background-color: rgba(139,92,246,0.2); border-radius: 2px; cursor: pointer;';
-const ADDRESSED_HIGHLIGHT_STYLE = 'background-color: rgba(59,130,246,0.2); border-radius: 2px; cursor: pointer;';
+const IN_PROGRESS_HIGHLIGHT_STYLE = 'background-color: rgba(244,114,182,0.2); border-radius: 2px; cursor: pointer;';
+const ADDRESSED_HIGHLIGHT_STYLE = 'background-color: rgba(148,163,184,0.2); border-radius: 2px; cursor: pointer;';
 
 /**
  * Apply a highlight to a Range by wrapping text nodes in <mark> elements.
@@ -111,9 +111,9 @@ export function applyElementHighlight(element: Element, id: string, status: Anno
   const el = element as HTMLElement;
   el.setAttribute(ELEMENT_HIGHLIGHT_ATTR, id);
   if (status === 'addressed') {
-    el.style.outline = '2px dashed rgba(59,130,246,0.5)';
+    el.style.outline = '2px dashed rgba(148,163,184,0.5)';
   } else if (status === 'in_progress') {
-    el.style.outline = '2px dashed rgba(139,92,246,0.5)';
+    el.style.outline = '2px dashed rgba(244,114,182,0.5)';
   } else {
     el.style.outline = '2px dashed rgba(217,119,6,0.8)';
   }
