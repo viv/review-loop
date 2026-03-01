@@ -78,7 +78,7 @@ export async function finishWorkHandler(
 export function register(server: McpServer, storage: ReviewStorage): void {
   server.tool(
     'finish_work',
-    'Finish working on an annotation. Marks it as "addressed", optionally updates the anchor text (so the browser UI can re-locate it), and optionally adds an agent reply explaining what was done. Requires start_work to have been called first (will reject otherwise). This is step 3 of the agent workflow: list_annotations → start_work → (edit code) → finish_work.',
+    'Finish working on an annotation. Marks it as "addressed", optionally updates the anchor text (so the browser UI can re-locate it), and optionally adds an agent reply explaining what was done. Requires start_work to have been called first (will reject otherwise). This is step 3 of the agent workflow: list_annotations → start_work → (edit code) → finish_work. After calling this, call list_annotations(status: "open") to check for remaining or newly reopened annotations.',
     {
       id: z.string().min(1).describe('The annotation ID to mark as finished'),
       anchorText: z.string().optional().describe('The new text that replaced the original annotated text (text annotations only). Enables the browser UI to re-locate the annotation after the text has changed.'),
