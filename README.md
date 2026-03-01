@@ -129,7 +129,7 @@ Add a `.mcp.json` file to your project root:
 }
 ```
 
-Claude Code reads `.mcp.json` on startup and discovers the annotation tools automatically. The `--storage` flag is optional and defaults to `./inline-review.json`. For other MCP clients, see [MCP Setup Guide](docs/guides/mcp-setup.md).
+Claude Code reads `.mcp.json` on startup and discovers the annotation tools automatically. The `--storage` flag is optional and defaults to `./inline-review.json`. For other MCP clients, see the [MCP Guide](docs/guides/mcp.md).
 
 ### 4. Annotate and go
 

@@ -454,15 +454,15 @@ The browser UI uses `replacedText` for Tier 2.5 location matching: when `selecte
 
 ```
 ┌─────────────┐     HTTP REST API    ┌──────────────────┐
-│   Browser    │ ←─────────────────→ │  Vite/Astro       │
-│  (reviewer)  │                     │  Dev Server       │
-└─────────────┘                     │                    │
-                                     │  ReviewStorage     │ ←→ inline-review.json
-                                     │                    │
-┌─────────────┐   MCP (stdio)       │  MCP Server        │
-│ Coding Agent │ ←─────────────────→ │  (subprocess)     │
+│   Browser   │ ←──────────────────→ │  Vite/Astro      │
+│  (reviewer) │                      │  Dev Server      │
+└─────────────┘                      │                  │
+                                     │  ReviewStorage   │ ←→ inline-review.json
+                                     │                  │
+┌──────────────┐   MCP (stdio)       │  MCP Server      │
+│ Coding Agent │ ←─────────────────→ │  (subprocess)    │
 │(Claude Code) │                     └──────────────────┘
-└─────────────┘
+└──────────────┘
 ```
 
 **Key design decisions:**
@@ -629,5 +629,4 @@ This prevents data corruption from concurrent tool calls within the same MCP ses
 ## See Also
 
 - [Annotation Status Workflows](./2026-02-28-annotation-status-workflows.md) — detailed status lifecycle documentation
-- [MCP Setup Guide](./mcp-setup.md) — setup instructions for different MCP clients
 - [Specification § 4.3](../spec/specification.md) — formal MCP server specification
