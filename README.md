@@ -2,7 +2,10 @@
 
 [![CI](https://github.com/viv/review-loop/actions/workflows/ci.yml/badge.svg)](https://github.com/viv/review-loop/actions/workflows/ci.yml)
 [![Acceptance Tests](https://github.com/viv/review-loop/actions/workflows/acceptance.yml/badge.svg)](https://github.com/viv/review-loop/actions/workflows/acceptance.yml)
+[![CodeQL](https://github.com/viv/review-loop/actions/workflows/codeql.yml/badge.svg)](https://github.com/viv/review-loop/actions/workflows/codeql.yml)
 [![npm version](https://img.shields.io/npm/v/review-loop)](https://www.npmjs.com/package/review-loop)
+[![npm downloads](https://img.shields.io/npm/dm/review-loop)](https://www.npmjs.com/package/review-loop)
+[![node](https://img.shields.io/node/v/review-loop)](package.json)
 [![licence](https://img.shields.io/npm/l/review-loop)](LICENSE)
 
 A dev-only annotation overlay that bridges human reviewers and AI coding agents. Browse your rendered site, annotate what needs changing, and let your coding agent act on the feedback directly via [MCP](https://modelcontextprotocol.io) — no copy-paste, no hunting through source files.
