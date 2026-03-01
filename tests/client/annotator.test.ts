@@ -23,6 +23,7 @@ vi.mock('../../src/client/ui/popup.js', () => ({
   showEditElementPopup: vi.fn(),
   hidePopup: vi.fn(),
   isPopupVisible: vi.fn(() => false),
+  hasUnsavedText: vi.fn(() => false),
 }));
 
 vi.mock('../../src/client/highlights.js', () => ({
@@ -93,6 +94,7 @@ import {
   showEditElementPopup,
   hidePopup,
   isPopupVisible,
+  hasUnsavedText,
 } from '../../src/client/ui/popup.js';
 import {
   applyHighlight,
@@ -432,17 +434,24 @@ describe('createAnnotator', () => {
     });
 
     it('does NOT dismiss popup when textarea has content', () => {
-      initAnnotator();
-      setupVisiblePopup();
+      vi.useFakeTimers();
+      try {
+        initAnnotator();
+        setupVisiblePopup();
 
-      mockPopup.textarea.value = 'some content';
+        (hasUnsavedText as Mock).mockReturnValue(true);
+        vi.advanceTimersByTime(500);
 
-      // Clear any hidePopup calls from setup
-      (hidePopup as Mock).mockClear();
+        // Clear any hidePopup calls from setup
+        (hidePopup as Mock).mockClear();
 
-      scrollPast50();
+        scrollPast50();
 
-      expect(hidePopup).not.toHaveBeenCalled();
+        expect(hidePopup).not.toHaveBeenCalled();
+      } finally {
+        (hasUnsavedText as Mock).mockReturnValue(false);
+        vi.useRealTimers();
+      }
     });
 
     it('dismisses popup when no focus and no content after grace period', () => {
@@ -512,6 +521,105 @@ describe('createAnnotator', () => {
       scrollPast50();
 
       expect(hidePopup).not.toHaveBeenCalled();
+    });
+  });
+
+  // =========================================================
+  // 3b. Click-outside Dismissal
+  // =========================================================
+
+  describe('click-outside dismissal', () => {
+    function setupVisiblePopup(): void {
+      const p = document.createElement('p');
+      p.textContent = 'Hello world';
+      document.body.appendChild(p);
+
+      const range = document.createRange();
+      range.setStart(p.firstChild!, 0);
+      range.setEnd(p.firstChild!, 5);
+
+      restoreSelection = mockSelection(range);
+
+      p.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+
+      (isPopupVisible as Mock).mockReturnValue(true);
+    }
+
+    afterEach(() => {
+      (isPopupVisible as Mock).mockReturnValue(false);
+      (hasUnsavedText as Mock).mockReturnValue(false);
+    });
+
+    it('dismisses popup on mousedown outside popup after grace period', () => {
+      vi.useFakeTimers();
+      try {
+        initAnnotator();
+        setupVisiblePopup();
+
+        vi.advanceTimersByTime(500);
+        (hidePopup as Mock).mockClear();
+
+        document.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+
+        expect(hidePopup).toHaveBeenCalledTimes(1);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('does NOT dismiss popup on mousedown outside during grace period', () => {
+      vi.useFakeTimers();
+      try {
+        initAnnotator();
+        setupVisiblePopup();
+
+        vi.advanceTimersByTime(100);
+        (hidePopup as Mock).mockClear();
+
+        document.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+
+        expect(hidePopup).not.toHaveBeenCalled();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('does NOT dismiss popup when hasUnsavedText returns true', () => {
+      vi.useFakeTimers();
+      try {
+        initAnnotator();
+        setupVisiblePopup();
+
+        (hasUnsavedText as Mock).mockReturnValue(true);
+        vi.advanceTimersByTime(500);
+        (hidePopup as Mock).mockClear();
+
+        document.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+
+        expect(hidePopup).not.toHaveBeenCalled();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('does NOT dismiss popup on mousedown inside popup container', () => {
+      vi.useFakeTimers();
+      try {
+        initAnnotator();
+        setupVisiblePopup();
+
+        vi.advanceTimersByTime(500);
+        (hidePopup as Mock).mockClear();
+
+        // Dispatch mousedown from within the popup container
+        const innerEl = document.createElement('button');
+        mockPopup.container.appendChild(innerEl);
+        innerEl.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, composed: true }));
+
+        expect(hidePopup).not.toHaveBeenCalled();
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 
@@ -1112,6 +1220,12 @@ describe('createAnnotator', () => {
       // Alt+click should no longer trigger element popup
       p.dispatchEvent(new MouseEvent('click', { bubbles: true, altKey: true }));
       expect(showElementPopup).not.toHaveBeenCalled();
+
+      // mousedown should no longer trigger click-outside dismissal
+      (isPopupVisible as Mock).mockReturnValue(true);
+      document.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+      expect(hidePopup).not.toHaveBeenCalled();
+      (isPopupVisible as Mock).mockReturnValue(false);
 
       // keydown should no longer activate inspector
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Alt', bubbles: true }));

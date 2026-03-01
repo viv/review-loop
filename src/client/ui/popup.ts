@@ -313,6 +313,15 @@ export function isPopupVisible(popup: PopupElements): boolean {
   return popup.container.classList.contains('air-popup--visible');
 }
 
+/**
+ * Check if the popup has unsaved text in any textarea (main or reopen form).
+ */
+export function hasUnsavedText(popup: PopupElements): boolean {
+  if (popup.textarea.value.trim()) return true;
+  const reopenTextarea = popup.container.querySelector<HTMLTextAreaElement>('[data-air-el="popup-reopen-textarea"]');
+  return !!reopenTextarea?.value.trim();
+}
+
 // --- Helpers ---
 
 function positionPopup(container: HTMLElement, rect: DOMRect): void {

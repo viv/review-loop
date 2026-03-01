@@ -28,6 +28,7 @@ import {
   showAddressedPopup,
   hidePopup,
   isPopupVisible,
+  hasUnsavedText,
   type PopupElements,
 } from './ui/popup.js';
 import { buildElementSelector, resolveElement } from './element-selector.js';
@@ -156,8 +157,8 @@ export function createAnnotator(deps: AnnotatorDeps): AnnotatorInstance {
   function onScroll(): void {
     if (isPopupVisible(popup) && popupScrollY !== null) {
       if (Math.abs(window.scrollY - popupScrollY) > 50) {
-        // Don't dismiss if textarea has unsaved content
-        if (popup.textarea.value.trim()) return;
+        // Don't dismiss if any textarea has unsaved content
+        if (hasUnsavedText(popup)) return;
         // Don't dismiss if user is actively interacting with the popup
         if (popup.container.contains(shadowRoot.activeElement)) return;
         // Don't dismiss during grace period after popup was shown.
@@ -171,6 +172,21 @@ export function createAnnotator(deps: AnnotatorDeps): AnnotatorInstance {
         popupScrollY = null;
       }
     }
+  }
+
+  function onClickOutside(e: MouseEvent): void {
+    if (!isPopupVisible(popup)) return;
+    // Don't dismiss during grace period (focus may not have landed yet)
+    if (Date.now() - popupShownAt < POPUP_GRACE_MS) return;
+    // Check if the click landed inside the popup (composedPath crosses Shadow DOM)
+    if (e.composedPath().includes(popup.container)) return;
+    // Don't dismiss if any textarea has unsaved content
+    if (hasUnsavedText(popup)) return;
+
+    hidePopup(popup);
+    currentRange = null;
+    currentElementTarget = null;
+    popupScrollY = null;
   }
 
   // --- Inspector Mode (Alt+hover) ---
@@ -799,6 +815,7 @@ export function createAnnotator(deps: AnnotatorDeps): AnnotatorInstance {
   document.addEventListener('keyup', onKeyUp);
   document.addEventListener('mousemove', onMouseMove);
   document.addEventListener('click', onClickCapture, true); // Capture phase
+  document.addEventListener('mousedown', onClickOutside);
 
   // --- Cleanup ---
 
@@ -809,6 +826,7 @@ export function createAnnotator(deps: AnnotatorDeps): AnnotatorInstance {
     document.removeEventListener('keyup', onKeyUp);
     document.removeEventListener('mousemove', onMouseMove);
     document.removeEventListener('click', onClickCapture, true);
+    document.removeEventListener('mousedown', onClickOutside);
     destroyInspector();
   }
 

@@ -7,6 +7,7 @@ import {
   showAddressedPopup,
   hidePopup,
   isPopupVisible,
+  hasUnsavedText,
 } from '../../../src/client/ui/popup.js';
 import type { PopupCallbacks, PopupElements } from '../../../src/client/ui/popup.js';
 
@@ -141,6 +142,51 @@ describe('popup — show and hide', () => {
     expect(isPopupVisible(popup)).toBe(false);
     expect(popup.textarea.value).toBe('');
     expect(popup.container.getAttribute('data-air-state')).toBe('hidden');
+  });
+});
+
+describe('popup — hasUnsavedText', () => {
+  let popup: PopupElements;
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    const shadowRoot = host.attachShadow({ mode: 'open' });
+    popup = createPopup(shadowRoot);
+  });
+
+  it('returns false when textarea is empty', () => {
+    popup.textarea.value = '';
+    expect(hasUnsavedText(popup)).toBe(false);
+  });
+
+  it('returns false when textarea is whitespace-only', () => {
+    popup.textarea.value = '   ';
+    expect(hasUnsavedText(popup)).toBe(false);
+  });
+
+  it('returns true when textarea has content', () => {
+    popup.textarea.value = 'some note';
+    expect(hasUnsavedText(popup)).toBe(true);
+  });
+
+  it('returns true when reopen form textarea has content', () => {
+    popup.textarea.value = '';
+    const reopenTextarea = document.createElement('textarea');
+    reopenTextarea.setAttribute('data-air-el', 'popup-reopen-textarea');
+    reopenTextarea.value = 'follow-up note';
+    popup.container.appendChild(reopenTextarea);
+    expect(hasUnsavedText(popup)).toBe(true);
+  });
+
+  it('returns false when reopen form textarea is empty', () => {
+    popup.textarea.value = '';
+    const reopenTextarea = document.createElement('textarea');
+    reopenTextarea.setAttribute('data-air-el', 'popup-reopen-textarea');
+    reopenTextarea.value = '';
+    popup.container.appendChild(reopenTextarea);
+    expect(hasUnsavedText(popup)).toBe(false);
   });
 });
 
