@@ -1,0 +1,200 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Pricing">
+  <div class="container">
+    <section class="hero">
+      <h1>Simple, Transparent Pricing</h1>
+      <p class="lead">
+        Choose the plan that's right for your organization's unique needs.
+        Every plan includes our core platform capabilities.
+      </p>
+    </section>
+
+    <section class="section">
+      <div class="pricing-grid">
+        <div class="pricing-card">
+          <h3>Starter</h3>
+          <div class="pricing-price">Free</div>
+          <p class="pricing-desc">It's not a trial &mdash; it's a starting point. Perfect for teams looking to explore the power of AI-driven collaboration.</p>
+          <ul class="pricing-features">
+            <li>Up to 5 team members</li>
+            <li>Basic analytics dashboard</li>
+            <li>Community support</li>
+            <li>100 actionable insights per month</li>
+            <li>Standard integrations</li>
+          </ul>
+          <a href="#" class="btn btn-secondary pricing-btn">Get Started</a>
+        </div>
+
+        <div class="pricing-card pricing-popular">
+          <span class="popular-badge">Most Popular</span>
+          <h3>Pro</h3>
+          <div class="pricing-price">&pound;49<span>/month</span></div>
+          <p class="pricing-desc">For teams that are serious about leveraging AI-driven insights to drive meaningful results.</p>
+          <ul class="pricing-features">
+            <li>Unlimited team members</li>
+            <li>Advanced analytics suite</li>
+            <li>Priority support</li>
+            <li>Unlimited actionable insights</li>
+            <li>Premium integrations</li>
+            <li>Custom workflows</li>
+          </ul>
+          <a href="#" class="btn btn-primary pricing-btn">Get Started</a>
+        </div>
+
+        <div class="pricing-card">
+          <h3>Enterprise</h3>
+          <div class="pricing-price">Custom</div>
+          <p class="pricing-desc">This isn't a plan &mdash; it's a partnership. For organizations that need a holistic, tailored solution.</p>
+          <ul class="pricing-features">
+            <li>Everything in Pro</li>
+            <li>Dedicated success manager</li>
+            <li>Enterprise-grade SLA</li>
+            <li>Holistic security audit</li>
+            <li>Bespoke onboarding</li>
+          </ul>
+          <a href="#" class="btn btn-secondary pricing-btn">Get Started</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="faq">
+        <h2 class="section-title text-center">Frequently Asked Questions</h2>
+        <div class="faq-list">
+          <div class="faq-item">
+            <h3>Can I try SynergyFlow before committing?</h3>
+            <p>
+              Absolutely! Our Starter plan is completely free and gives you access to
+              our core features. We don't ask you to take our word for it &mdash; we ask
+              you to experience the transformative power of our platform for yourself.
+            </p>
+          </div>
+          <div class="faq-item">
+            <h3>What makes Pro the most popular choice?</h3>
+            <p>
+              Our Pro plan offers the optimal balance of cutting-edge features and value.
+              It's designed for teams that are serious about leveraging AI-driven insights
+              to drive meaningful results &mdash; it's not just an upgrade, it's a
+              transformation.
+            </p>
+          </div>
+          <div class="faq-item">
+            <h3>How does Enterprise pricing work?</h3>
+            <p>
+              Enterprise isn't about scale &mdash; it's about depth. We aim to work
+              closely with your team to create a bespoke solution that delivers maximum
+              value across every facet of your operations.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</Layout>
+
+<style>
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    align-items: start;
+  }
+
+  .pricing-card {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    position: relative;
+    background: var(--bg-card);
+  }
+
+  .pricing-popular {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent);
+  }
+
+  .popular-badge {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--accent);
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .pricing-card h3 {
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .pricing-price {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+  }
+
+  .pricing-price span {
+    font-size: 1rem;
+    font-weight: 400;
+    color: var(--text-muted);
+  }
+
+  .pricing-desc {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .pricing-features {
+    list-style: none;
+    text-align: left;
+    margin-bottom: 1.5rem;
+  }
+
+  .pricing-features li {
+    padding: 0.4rem 0;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .pricing-btn {
+    width: 100%;
+    text-align: center;
+  }
+
+  .faq {
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .faq-list {
+    margin-top: 2rem;
+  }
+
+  .faq-item {
+    padding: 1.25rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .faq-item h3 {
+    font-size: 1.05rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .faq-item p {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.7;
+  }
+</style>

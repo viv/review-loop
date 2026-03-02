@@ -7,3 +7,4 @@ assets/
 .astro/
 inline-review.json
 examples/*/package-lock.json
+demo/package-lock.json

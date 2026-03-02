@@ -1,0 +1,372 @@
+---
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+---
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title} | SynergyFlow</title>
+</head>
+<body>
+  <nav class="nav">
+    <div class="container nav-inner">
+      <a href="/" class="nav-logo">SynergyFlow</a>
+      <div class="nav-links">
+        <a href="/" class:list={[{ active: path === '/' }]}>Home</a>
+        <a href="/about" class:list={[{ active: path === '/about' }]}>About</a>
+        <a href="/blog" class:list={[{ active: path === '/blog' }]}>Blog</a>
+        <a href="/pricing" class:list={[{ active: path === '/pricing' }]}>Pricing</a>
+        <a href="#" id="guide-toggle" class="nav-guide">Guide</a>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <slot />
+  </main>
+
+  <div class="guide-widget" id="guide-widget">
+    <div class="guide-card">
+      <button class="guide-close" id="guide-close">&times;</button>
+      <h3>Getting Started</h3>
+      <ol>
+        <li><strong>Select text</strong> on any page and type a note in the popup</li>
+        <li><strong>Alt+click</strong> (Option+click on Mac) any element to annotate it</li>
+        <li>Click the <strong>Review Loop button</strong> (bottom-right) to see all annotations</li>
+      </ol>
+      {path === '/' && (
+        <div class="guide-tip">
+          <strong>On this page:</strong> Try selecting the buzzword-heavy hero text, or Alt+click one of the identical feature cards.
+        </div>
+      )}
+      {path === '/about' && (
+        <div class="guide-tip">
+          <strong>On this page:</strong> Try Alt+clicking the team cards — the bios are interchangeable. Or select the hedging language in the values section.
+        </div>
+      )}
+      {path === '/blog' && (
+        <div class="guide-tip">
+          <strong>On this page:</strong> Try selecting some of the AI cliches in the article — "delve", "tapestry", or the opening line.
+        </div>
+      )}
+      {path === '/pricing' && (
+        <div class="guide-tip">
+          <strong>On this page:</strong> Try adding a page note about the pricing structure, or Alt+click the Enterprise "Get Started" button.
+        </div>
+      )}
+      <p class="guide-mcp">
+        <strong>For AI agents:</strong> connect via MCP, then ask your agent to "check Review Loop".
+      </p>
+    </div>
+  </div>
+
+  <script is:inline>
+    document.getElementById('guide-toggle').addEventListener('click', function(e) {
+      e.preventDefault();
+      document.getElementById('guide-widget').classList.toggle('open');
+    });
+    document.getElementById('guide-close').addEventListener('click', function() {
+      document.getElementById('guide-widget').classList.remove('open');
+    });
+  </script>
+
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2026 SynergyFlow. Empowering innovation, one seamless experience at a time.</p>
+    </div>
+  </footer>
+</body>
+</html>
+
+<style is:global>
+  :root {
+    --bg: #0f172a;
+    --bg-alt: #1e293b;
+    --bg-card: #1e293b;
+    --text: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --accent: #38bdf8;
+    --accent-hover: #0ea5e9;
+    --border: #334155;
+    --border-light: rgba(255, 255, 255, 0.06);
+  }
+
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: var(--text);
+    line-height: 1.6;
+    background: var(--bg);
+  }
+
+  a {
+    color: inherit;
+  }
+
+  .container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+
+  /* Navigation */
+
+  .nav {
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .nav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+  }
+
+  .nav-logo {
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+  }
+
+  .nav-links a {
+    text-decoration: none;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+
+  .nav-links a:hover,
+  .nav-links a.active {
+    color: var(--accent);
+  }
+
+  .nav-guide {
+    background: var(--bg-alt);
+    padding: 0.3rem 0.8rem;
+    border-radius: 6px;
+  }
+
+  /* Shared section styles */
+
+  .hero {
+    padding: 4rem 0 3rem;
+    text-align: center;
+  }
+
+  .hero h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 1rem;
+  }
+
+  .hero .lead {
+    font-size: 1.15rem;
+    color: var(--text-secondary);
+    max-width: 620px;
+    margin: 0 auto 1.5rem;
+  }
+
+  .hero-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+  }
+
+  .section {
+    padding: 3rem 0;
+  }
+
+  .section-alt {
+    background: var(--bg-alt);
+  }
+
+  .section-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+
+  .section-subtitle {
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+  }
+
+  .text-center {
+    text-align: center;
+  }
+
+  /* Cards */
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+  }
+
+  .card h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .card p {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  /* Buttons */
+
+  .btn {
+    display: inline-block;
+    padding: 0.6rem 1.5rem;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border: none;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #ffffff;
+  }
+
+  .btn-primary:hover {
+    background: var(--accent-hover);
+  }
+
+  .btn-secondary {
+    background: var(--bg-alt);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .btn-secondary:hover {
+    background: var(--border);
+  }
+
+  /* Guide widget */
+
+  .guide-widget {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 1.5rem;
+    z-index: 90;
+    max-width: 340px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: opacity 0.2s, transform 0.2s, visibility 0.2s;
+  }
+
+  .guide-widget.open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+
+  .guide-card {
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem;
+    position: relative;
+  }
+
+  .guide-card h3 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    color: var(--accent);
+  }
+
+  .guide-card ol {
+    margin: 0 0 0.75rem 1.25rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  .guide-card li {
+    margin-bottom: 0.3rem;
+  }
+
+  .guide-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    cursor: pointer;
+    line-height: 1;
+  }
+
+  .guide-close:hover {
+    color: var(--text);
+  }
+
+  .guide-tip {
+    background: var(--bg);
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .guide-mcp {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    border-top: 1px solid var(--border);
+    padding-top: 0.75rem;
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  /* Footer */
+
+  .footer {
+    border-top: 1px solid var(--border);
+    padding: 2rem 0;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin-top: 4rem;
+  }
+</style>

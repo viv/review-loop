@@ -1,0 +1,162 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="About">
+  <div class="container">
+    <section class="hero">
+      <h1>About SynergyFlow</h1>
+      <p class="lead">
+        Pioneering the future of workplace collaboration through innovative,
+        AI-driven solutions.
+      </p>
+    </section>
+
+    <section class="section">
+      <h2 class="section-title">Our Mission</h2>
+      <p class="about-text">
+        At SynergyFlow, we're passionate about revolutionizing the way organizations
+        collaborate. We don't build software &mdash; we build the future of work. Our
+        mission: to empower teams worldwide with innovative, AI-driven solutions that
+        unlock unprecedented levels of productivity and foster meaningful collaboration
+        across every facet of the modern workplace.
+      </p>
+    </section>
+
+    <section class="section">
+      <h2 class="section-title">Our Journey</h2>
+      <p class="about-text">
+        Founded in 2023, SynergyFlow was born from a simple yet profound realization
+        &mdash; in today's rapidly evolving digital landscape, businesses need more
+        than just tools. They need a holistic ecosystem. Not a platform. A partner.
+      </p>
+      <p class="about-text">
+        I started this company because I believed in something bigger. I saw the
+        challenges teams face. I understood the frustration of disconnected workflows.
+        I knew there had to be a better way. You might feel the same frustration
+        in your own organization &mdash; the manual processes, the lost productivity,
+        the missed opportunities for synergy.
+      </p>
+      <p class="about-text">
+        Our journey has been nothing short of transformative. From our humble beginnings
+        as a small team of passionate innovators, we've grown into a world-class
+        organization serving thousands of clients globally. But growth isn't the story
+        here &mdash; impact is. Furthermore, we continue to push the boundaries of
+        what's possible in the realm of workplace collaboration technology.
+      </p>
+    </section>
+
+    <section class="section">
+      <div class="text-center">
+        <h2 class="section-title">Meet the Team</h2>
+        <p class="section-subtitle">
+          Our diverse team of industry experts brings a wealth of experience to the table.
+        </p>
+      </div>
+      <div class="card-grid team-grid">
+        <div class="card team-card">
+          <h3>Alexandra Chen</h3>
+          <p class="team-role">Chief Executive Officer</p>
+          <p>
+            A visionary leader passionate about empowering teams. For Alexandra,
+            leadership isn't about authority &mdash; it's about enabling others. She aims
+            to leverage her 15 years of experience navigating the intricate landscape
+            of technology innovation to drive meaningful change.
+          </p>
+        </div>
+        <div class="card team-card">
+          <h3>Marcus Rivera</h3>
+          <p class="team-role">Chief Technology Officer</p>
+          <p>
+            With a robust background in cutting-edge software architecture, Marcus
+            brings a nuanced understanding of scalable systems. He doesn't write code
+            &mdash; he crafts solutions. His meticulous approach seeks to ensure every
+            line of code delivers maximum value.
+          </p>
+        </div>
+        <div class="card team-card">
+          <h3>Dr. Priya Sharma</h3>
+          <p class="team-role">Head of AI</p>
+          <p>
+            A thought leader in the realm of artificial intelligence, Dr. Sharma's
+            groundbreaking research has been instrumental in shaping our innovative
+            approach to leveraging machine learning for enterprise solutions. For her,
+            AI isn't a technology &mdash; it's a responsibility.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-alt values-section">
+      <div class="container">
+        <div class="text-center">
+          <h2 class="section-title">Our Core Values</h2>
+          <p class="section-subtitle">
+            These values serve as the cornerstone of everything we do.
+          </p>
+        </div>
+        <div class="values-grid">
+          <div class="value-item">
+            <h3>Innovation at Our Core</h3>
+            <p>Innovation isn't something we do &mdash; it's who we are. We seek to constantly push boundaries, leveraging cutting-edge technologies to deliver transformative solutions.</p>
+          </div>
+          <div class="value-item">
+            <h3>Customer-Centric Excellence</h3>
+            <p>We aim to put our customers at the heart of every decision, fostering meaningful partnerships that drive mutual success.</p>
+          </div>
+          <div class="value-item">
+            <h3>Transparent Collaboration</h3>
+            <p>We try to maintain open and honest communication, building trust through transparency in everything we endeavour to accomplish.</p>
+          </div>
+          <div class="value-item">
+            <h3>Sustainable Growth</h3>
+            <p>Success isn't a destination &mdash; it's a direction. We believe in building for the long term, creating scalable solutions that grow alongside our clients' evolving needs.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</Layout>
+
+<style>
+  .about-text {
+    font-size: 1.05rem;
+    line-height: 1.8;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+    max-width: 750px;
+  }
+
+  .team-role {
+    color: var(--accent);
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+  }
+
+  .values-section {
+    margin: 3rem -1.5rem 0;
+    padding: 3rem 1.5rem;
+    border-radius: 0;
+  }
+
+  .values-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+
+  .value-item {
+    padding: 1.5rem;
+  }
+
+  .value-item h3 {
+    font-size: 1.05rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .value-item p {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+  }
+</style>
