@@ -42,8 +42,9 @@ export function getAnnotationStatus(a: BaseAnnotation): AnnotationStatus {
     if ((a.status as string) === 'resolved') return 'addressed';
     return a.status;
   }
-  // Legacy annotations without status field: resolvedAt → addressed
+  // Legacy annotations without status field: derive from timestamps
   if (a.resolvedAt) return 'addressed';
+  if (a.inProgressAt) return 'in_progress';
   return 'open';
 }
 

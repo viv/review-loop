@@ -280,13 +280,14 @@ export function createMiddleware(storage: ReviewStorage): MiddlewareHandler {
 
         let pageNote!: PageNote;
         await storage.mutate(store => {
+          const now = new Date().toISOString();
           pageNote = {
             id: randomUUID(),
             pageUrl: body.pageUrl as string,
             pageTitle: (body.pageTitle as string) ?? '',
             note: body.note as string,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            createdAt: now,
+            updatedAt: now,
           };
           store.pageNotes.push(pageNote);
           return store;

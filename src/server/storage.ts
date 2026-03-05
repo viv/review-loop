@@ -64,13 +64,19 @@ export class ReviewStorage {
 
   async write(store: ReviewStore): Promise<void> {
     // Queue writes to prevent concurrent file corruption
-    this.writeQueue = this.writeQueue.then(async () => {
-      const json = JSON.stringify(store, null, 2) + '\n';
-      const tmpPath = this.filePath + '.tmp';
-      await writeFile(tmpPath, json, 'utf-8');
-      await rename(tmpPath, this.filePath);
-    });
-    return this.writeQueue;
+    let error: unknown;
+    this.writeQueue = this.writeQueue
+      .then(async () => {
+        const json = JSON.stringify(store, null, 2) + '\n';
+        const tmpPath = this.filePath + '.tmp';
+        await writeFile(tmpPath, json, 'utf-8');
+        await rename(tmpPath, this.filePath);
+      })
+      .catch((err) => {
+        error = err;
+      });
+    await this.writeQueue;
+    if (error !== undefined) throw error;
   }
 
   /**

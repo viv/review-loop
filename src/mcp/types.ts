@@ -4,5 +4,5 @@ export interface ToolResult {
 }
 
 export interface ErrorResult extends ToolResult {
-  isError: boolean;
+  isError: true;
 }
