@@ -361,6 +361,53 @@ export const PANEL_STYLES = /* css */ `
     margin-top: 4px;
   }
 
+  .air-diff-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #94A3B8;
+    background: none;
+    border: 1px solid #444;
+    border-radius: 4px;
+    padding: 2px 8px;
+    cursor: pointer;
+    margin-left: 8px;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .air-diff-toggle:hover {
+    background: #333;
+    color: #e5e5e5;
+  }
+
+  .air-diff-container {
+    margin-top: 8px;
+    padding: 8px;
+    background: #1a1a1a;
+    border-radius: 4px;
+    border: 1px solid #333;
+    font-size: 13px;
+    line-height: 1.6;
+    font-style: normal;
+    word-break: break-word;
+  }
+
+  .air-diff-removed {
+    background: rgba(239, 68, 68, 0.2);
+    color: #FCA5A5;
+    text-decoration: line-through;
+    padding: 1px 2px;
+    border-radius: 2px;
+  }
+
+  .air-diff-added {
+    background: rgba(34, 197, 94, 0.15);
+    color: #86EFAC;
+    padding: 1px 2px;
+    border-radius: 2px;
+  }
+
   .air-page-group__title {
     font-size: 14px;
     font-weight: 600;
