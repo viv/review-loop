@@ -1197,3 +1197,167 @@ describe('createPanel — status lifecycle buttons', () => {
     expect(reopenBtn).toBeNull();
   });
 });
+
+describe('annotation item — inline diff toggle', () => {
+  let shadowRoot: ShadowRoot;
+  let callbacks: PanelCallbacks;
+  let mediator: ReviewMediator;
+
+  function makeTextAnnotation(overrides: Record<string, unknown> = {}) {
+    return {
+      id: 'ann-1', type: 'text' as const, pageUrl: '/', pageTitle: 'Home',
+      selectedText: 'the quick brown fox', note: 'fix wording',
+      range: { startXPath: '', startOffset: 0, endXPath: '', endOffset: 0, selectedText: 'the quick brown fox', contextBefore: '', contextAfter: '' },
+      createdAt: '2026-02-22T09:00:00Z', updatedAt: '2026-02-22T09:00:00Z',
+      ...overrides,
+    };
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    shadowRoot = host.attachShadow({ mode: 'open' });
+
+    callbacks = {
+      onAnnotationClick: vi.fn(),
+      onAnnotationDelete: vi.fn().mockResolvedValue(undefined),
+      onAnnotationStatusChange: vi.fn().mockResolvedValue(undefined),
+      getOrphanState: vi.fn().mockReturnValue('anchored'),
+      onRefreshBadge: vi.fn().mockResolvedValue(undefined),
+      onExport: vi.fn().mockResolvedValue(undefined),
+    };
+
+    mediator = {
+      refreshPanel: vi.fn(),
+      restoreHighlights: vi.fn().mockResolvedValue(undefined),
+    };
+  });
+
+  async function renderWithStore(store: ReviewStore) {
+    vi.mocked(api.getStore).mockResolvedValue(store);
+    createPanel(shadowRoot, callbacks, mediator);
+    await mediator.refreshPanel();
+  }
+
+  it('shows diff toggle on addressed annotation with replacedText', async () => {
+    await renderWithStore({
+      version: 1,
+      annotations: [makeTextAnnotation({
+        status: 'addressed',
+        addressedAt: '2026-02-22T10:00:00Z',
+        replacedText: 'the slow brown fox',
+      })],
+      pageNotes: [],
+    });
+
+    const toggle = shadowRoot.querySelector('[data-air-el="diff-toggle"]');
+    expect(toggle).not.toBeNull();
+    expect(toggle!.textContent).toBe('\u25B6 Diff');
+  });
+
+  it('does not show diff toggle on open annotation', async () => {
+    await renderWithStore({
+      version: 1,
+      annotations: [makeTextAnnotation()],
+      pageNotes: [],
+    });
+
+    const toggle = shadowRoot.querySelector('[data-air-el="diff-toggle"]');
+    expect(toggle).toBeNull();
+  });
+
+  it('does not show diff toggle on addressed annotation without replacedText', async () => {
+    await renderWithStore({
+      version: 1,
+      annotations: [makeTextAnnotation({
+        status: 'addressed',
+        addressedAt: '2026-02-22T10:00:00Z',
+      })],
+      pageNotes: [],
+    });
+
+    const toggle = shadowRoot.querySelector('[data-air-el="diff-toggle"]');
+    expect(toggle).toBeNull();
+  });
+
+  it('diff container is initially hidden', async () => {
+    await renderWithStore({
+      version: 1,
+      annotations: [makeTextAnnotation({
+        status: 'addressed',
+        addressedAt: '2026-02-22T10:00:00Z',
+        replacedText: 'the slow brown fox',
+      })],
+      pageNotes: [],
+    });
+
+    const container = shadowRoot.querySelector('[data-air-el="diff-container"]') as HTMLElement;
+    expect(container).not.toBeNull();
+    expect(container.style.display).toBe('none');
+  });
+
+  it('clicking toggle shows diff container with diff segments', async () => {
+    await renderWithStore({
+      version: 1,
+      annotations: [makeTextAnnotation({
+        status: 'addressed',
+        addressedAt: '2026-02-22T10:00:00Z',
+        replacedText: 'the slow brown fox',
+      })],
+      pageNotes: [],
+    });
+
+    const toggle = shadowRoot.querySelector('[data-air-el="diff-toggle"]') as HTMLButtonElement;
+    toggle.click();
+
+    const container = shadowRoot.querySelector('[data-air-el="diff-container"]') as HTMLElement;
+    expect(container.style.display).toBe('block');
+    expect(toggle.textContent).toBe('\u25BC Diff');
+
+    // Should contain diff segments
+    const removed = container.querySelector('.air-diff-removed');
+    const added = container.querySelector('.air-diff-added');
+    expect(removed).not.toBeNull();
+    expect(removed!.textContent).toContain('quick');
+    expect(added).not.toBeNull();
+    expect(added!.textContent).toContain('slow');
+  });
+
+  it('clicking toggle again hides diff container', async () => {
+    await renderWithStore({
+      version: 1,
+      annotations: [makeTextAnnotation({
+        status: 'addressed',
+        addressedAt: '2026-02-22T10:00:00Z',
+        replacedText: 'the slow brown fox',
+      })],
+      pageNotes: [],
+    });
+
+    const toggle = shadowRoot.querySelector('[data-air-el="diff-toggle"]') as HTMLButtonElement;
+    toggle.click(); // open
+    toggle.click(); // close
+
+    const container = shadowRoot.querySelector('[data-air-el="diff-container"]') as HTMLElement;
+    expect(container.style.display).toBe('none');
+    expect(toggle.textContent).toBe('\u25B6 Diff');
+  });
+
+  it('clicking toggle does not trigger onAnnotationClick', async () => {
+    await renderWithStore({
+      version: 1,
+      annotations: [makeTextAnnotation({
+        status: 'addressed',
+        addressedAt: '2026-02-22T10:00:00Z',
+        replacedText: 'the slow brown fox',
+      })],
+      pageNotes: [],
+    });
+
+    const toggle = shadowRoot.querySelector('[data-air-el="diff-toggle"]') as HTMLButtonElement;
+    toggle.click();
+
+    expect(callbacks.onAnnotationClick).not.toHaveBeenCalled();
+  });
+});
