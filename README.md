@@ -156,6 +156,16 @@ Once connected via MCP, the agent follows a three-step workflow:
 
 The reviewer sees status updates and agent replies in the browser panel in real time.
 
+#### Continuous monitoring with `/loop`
+
+Claude Code's [`/loop`](https://docs.claude.com/en/docs/claude-code/scheduled-tasks) command pairs naturally with review-loop — set it running and annotations are picked up automatically as reviewers add them:
+
+```
+/loop 1m check review-loop for open annotations and address them
+```
+
+This creates a recurring check that calls `list_annotations`, works through any open feedback, and waits for more. The reviewer annotates at their own pace; the agent picks up each annotation within a minute.
+
 ### Keyboard shortcuts
 
 | Shortcut | Action |
