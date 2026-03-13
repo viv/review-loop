@@ -23,13 +23,47 @@ A multi-page Astro site that demonstrates Review Loop's annotation features. The
 
 ## Running the demo
 
+From the repository root:
+
 ```bash
+npm run build          # build the review-loop package
 cd demo
 npm install
-npm run dev
+npm run dev            # starts on http://localhost:4321
 ```
 
-The site runs on `http://localhost:4321`. Review Loop is automatically active in dev mode.
+Review Loop is automatically active in dev mode — the integration is a no-op during production builds.
+
+## Connecting your agent via MCP
+
+The demo includes a `.mcp.json` that Claude Code discovers automatically when you run it from the `demo/` directory.
+
+### Option A: Run Claude Code from the demo directory
+
+```bash
+cd demo
+claude
+```
+
+Claude Code reads `.mcp.json` on startup and connects to the MCP server. The `list_annotations`, `start_work`, and `finish_work` tools are available immediately.
+
+### Option B: Add the MCP server from anywhere
+
+If you're already in a Claude Code session (e.g. from the repo root), add the demo's MCP server:
+
+```bash
+# Inside Claude Code — use /mcp add
+/mcp add review-loop-demo -- node ./dist/mcp/server.js --storage ./demo/inline-review.json
+```
+
+Or from a regular terminal:
+
+```bash
+# From the repo root
+claude mcp add review-loop-demo -- node ./dist/mcp/server.js --storage ./demo/inline-review.json
+```
+
+Both register the server in your project-scoped MCP config. The tools become available on the next Claude Code session (or immediately if using `/mcp add` within a session).
 
 ## Guide widget
 
@@ -82,8 +116,9 @@ The design is broadly fine but includes a few things worth flagging:
 ### For AI agent demonstrations
 
 1. Create some annotations using the browser UI
-2. Connect an AI agent via MCP, then ask it to "check Review Loop"
-3. Annotations are stored in `inline-review.json` at the demo root
+2. Connect your agent via MCP (see [Connecting your agent via MCP](#connecting-your-agent-via-mcp) above)
+3. Ask the agent to "check Review Loop" — it will list annotations and can start working on them
+4. Annotations are stored in `inline-review.json` at the demo root
 
 ## Git protection
 
