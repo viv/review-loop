@@ -129,11 +129,23 @@ export const PANEL_STYLES = /* css */ `
     flex-shrink: 0;
   }
 
+  .air-panel__title-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
   .air-panel__title {
     font-size: 16px;
     font-weight: 600;
     color: #f5f5f5;
     margin: 0;
+  }
+
+  .air-panel__version {
+    font-size: 11px;
+    color: #888;
+    font-weight: 400;
   }
 
   .air-panel__actions {

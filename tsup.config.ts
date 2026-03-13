@@ -1,4 +1,7 @@
 import { defineConfig } from 'tsup';
+import { readFileSync } from 'node:fs';
+
+const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'));
 
 export default defineConfig([
   // Server/integration entry — Node APIs, not bundled
@@ -19,6 +22,7 @@ export default defineConfig([
     // Bundle everything into one file — no external deps in the browser
     noExternal: [/.*/],
     platform: 'browser',
+    define: { __REVIEW_LOOP_VERSION__: JSON.stringify(pkg.version) },
   },
   // MCP server entry — CLI executable, runtime deps externalised
   {

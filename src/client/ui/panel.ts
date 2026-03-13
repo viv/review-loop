@@ -53,10 +53,20 @@ export function createPanel(
   const header = document.createElement('div');
   header.className = 'air-panel__header';
 
+  const titleGroup = document.createElement('div');
+  titleGroup.className = 'air-panel__title-group';
+
   const title = document.createElement('h2');
   title.className = 'air-panel__title';
   title.textContent = 'Review Loop';
-  header.appendChild(title);
+  titleGroup.appendChild(title);
+
+  const version = document.createElement('span');
+  version.className = 'air-panel__version';
+  version.textContent = `v${__REVIEW_LOOP_VERSION__}`;
+  titleGroup.appendChild(version);
+
+  header.appendChild(titleGroup);
 
   const actions = document.createElement('div');
   actions.className = 'air-panel__actions';

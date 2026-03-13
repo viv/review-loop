@@ -10,6 +10,7 @@ export default defineConfig({
     },
     projects: [
       {
+        define: { __REVIEW_LOOP_VERSION__: JSON.stringify('test') },
         test: {
           name: 'client',
           environment: 'happy-dom',

@@ -44,6 +44,8 @@ function scrollToAnnotation(id: string): void {
 const INIT_FLAG = '__review_loop_init';
 
 declare global {
+  /** Package version injected at build time by tsup define */
+  const __REVIEW_LOOP_VERSION__: string;
   interface Window {
     [INIT_FLAG]?: boolean;
   }
