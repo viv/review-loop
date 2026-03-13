@@ -469,7 +469,7 @@ export function createAnnotator(deps: AnnotatorDeps): AnnotatorInstance {
           }
         },
         onCancel: () => hidePopup(popup),
-      }, latestReply);
+      }, latestReply, annotation.replacedText);
     } else {
       // status === 'open'
       showEditPopup(popup, annotation.selectedText, annotation.note, rect, {

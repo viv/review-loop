@@ -44,7 +44,14 @@ export async function finishWorkHandler(
       annotation.addressedAt = now;
       annotation.updatedAt = now;
 
-      // Optionally update anchor text (maps to replacedText in storage)
+      // Update anchor text (maps to replacedText in storage)
+      // Required for text annotations so reviewers can see what changed via inline diff
+      if (isTextAnnotation(annotation) && params.anchorText === undefined) {
+        throw new Error(
+          `anchorText is required for text annotations — provide the new text that replaced "${annotation.selectedText}" ` +
+          `so reviewers can see an inline diff of what changed.`
+        );
+      }
       if (params.anchorText !== undefined) {
         if (!isTextAnnotation(annotation)) {
           throw new Error(`Annotation "${params.id}" is not a text annotation — anchorText only applies to text annotations`);
@@ -81,7 +88,7 @@ export function register(server: McpServer, storage: ReviewStorage): void {
     'Finish working on an annotation. Marks it as "addressed", optionally updates the anchor text (so the browser UI can re-locate it), and optionally adds an agent reply explaining what was done. Requires start_work to have been called first (will reject otherwise). This is step 3 of the agent workflow: list_annotations → start_work → (edit code) → finish_work. After calling this, call list_annotations(status: "open") to check for remaining or newly reopened annotations.',
     {
       id: z.string().min(1).describe('The annotation ID to mark as finished'),
-      anchorText: z.string().optional().describe('The new text that replaced the original annotated text (text annotations only). Enables the browser UI to re-locate the annotation after the text has changed.'),
+      anchorText: z.string().optional().describe('The new text that replaced the original annotated text. REQUIRED for text annotations — enables inline diff preview so reviewers can see exactly what changed. Not applicable to element annotations.'),
       message: z.string().optional().describe('A reply message explaining what action was taken. Visible to reviewers in the panel UI.'),
     },
     async (params) => finishWorkHandler(storage, params),

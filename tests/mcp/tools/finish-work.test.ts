@@ -61,7 +61,7 @@ describe('finish_work handler', () => {
     };
     await storage.write(store);
 
-    const result = await finishWorkHandler(storage, { id: 'ann1' });
+    const result = await finishWorkHandler(storage, { id: 'ann1', anchorText: 'fixed text' });
 
     const data = JSON.parse(result.content[0].text);
     expect(data.status).toBe('addressed');
@@ -74,7 +74,7 @@ describe('finish_work handler', () => {
     };
     await storage.write(store);
 
-    const result = await finishWorkHandler(storage, { id: 'ann1' });
+    const result = await finishWorkHandler(storage, { id: 'ann1', anchorText: 'fixed text' });
 
     const data = JSON.parse(result.content[0].text);
     expect(data.addressedAt).toBeDefined();
@@ -88,7 +88,7 @@ describe('finish_work handler', () => {
     };
     await storage.write(store);
 
-    const result = await finishWorkHandler(storage, { id: 'ann1' });
+    const result = await finishWorkHandler(storage, { id: 'ann1', anchorText: 'fixed text' });
 
     const data = JSON.parse(result.content[0].text);
     expect(data.updatedAt).not.toBe('2026-01-01T00:00:00.000Z');
@@ -101,7 +101,7 @@ describe('finish_work handler', () => {
     };
     await storage.write(store);
 
-    await finishWorkHandler(storage, { id: 'ann1' });
+    await finishWorkHandler(storage, { id: 'ann1', anchorText: 'fixed text' });
 
     const persisted = await storage.read();
     expect(persisted.annotations[0].status).toBe('addressed');
@@ -176,7 +176,7 @@ describe('finish_work handler', () => {
     };
     await storage.write(store);
 
-    const result = await finishWorkHandler(storage, { id: 'ann1', message: 'Fixed the typo' });
+    const result = await finishWorkHandler(storage, { id: 'ann1', anchorText: 'fixed text', message: 'Fixed the typo' });
 
     const data = JSON.parse(result.content[0].text);
     expect(data.replies).toHaveLength(1);
@@ -196,7 +196,7 @@ describe('finish_work handler', () => {
     };
     await storage.write(store);
 
-    const result = await finishWorkHandler(storage, { id: 'ann1', message: 'Second reply' });
+    const result = await finishWorkHandler(storage, { id: 'ann1', anchorText: 'fixed text', message: 'Second reply' });
 
     const data = JSON.parse(result.content[0].text);
     expect(data.replies).toHaveLength(2);
@@ -224,7 +224,7 @@ describe('finish_work handler', () => {
     };
     await storage.write(store);
 
-    await finishWorkHandler(storage, { id: 'ann1', message: 'Done' });
+    await finishWorkHandler(storage, { id: 'ann1', anchorText: 'fixed text', message: 'Done' });
 
     const persisted = await storage.read();
     expect(persisted.annotations[0].replies).toHaveLength(1);
@@ -253,7 +253,7 @@ describe('finish_work handler', () => {
     expect(data.replies[0].message).toBe('Replaced the text');
   });
 
-  it('works with no optional parameters', async () => {
+  it('rejects text annotation without anchorText', async () => {
     const store: ReviewStore = {
       ...createEmptyStore(),
       annotations: [{ ...makeTextAnnotation('ann1', '/', 'fix this'), status: 'in_progress' as const, inProgressAt: '2026-01-15T00:00:00.000Z' }],
@@ -262,10 +262,8 @@ describe('finish_work handler', () => {
 
     const result = await finishWorkHandler(storage, { id: 'ann1' });
 
-    const data = JSON.parse(result.content[0].text);
-    expect(data.status).toBe('addressed');
-    expect(data.replacedText).toBeUndefined();
-    expect(data.replies).toBeUndefined();
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('anchorText is required for text annotations');
   });
 
   // ── Error cases ────────────────────────────────────────────────────
@@ -299,7 +297,7 @@ describe('finish_work handler', () => {
     };
     await storage.write(store);
 
-    const result = await finishWorkHandler(storage, { id: 'ann1', message: 'Done' });
+    const result = await finishWorkHandler(storage, { id: 'ann1', anchorText: 'fixed text', message: 'Done' });
 
     const data = JSON.parse(result.content[0].text);
     const createdAt = data.replies[0].createdAt;

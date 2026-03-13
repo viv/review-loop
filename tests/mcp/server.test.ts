@@ -298,18 +298,26 @@ describe('MCP server integration', () => {
     expect(result.content[0].text).toContain('start_work');
   });
 
-  it('finish_work works with only required params', async () => {
+  it('finish_work requires anchorText for text annotations', async () => {
     await client.initialize();
 
     // Must call start_work first
     await client.callTool('start_work', { id: 'ann-2' });
 
-    const response = await client.callTool('finish_work', { id: 'ann-2' });
+    // Omitting anchorText on a text annotation should error
+    const errorResponse = await client.callTool('finish_work', { id: 'ann-2' });
+    const errorResult = errorResponse.result as { content: Array<{ type: string; text: string }>; isError: boolean };
+    expect(errorResult.isError).toBe(true);
+    expect(errorResult.content[0].text).toContain('anchorText is required');
+
+    // Providing anchorText should succeed
+    const response = await client.callTool('finish_work', { id: 'ann-2', anchorText: 'Our organisation' });
     const result = response.result as { content: Array<{ type: string; text: string }> };
     const annotation = JSON.parse(result.content[0].text);
 
     expect(annotation.status).toBe('addressed');
     expect(annotation.addressedAt).toBeDefined();
+    expect(annotation.replacedText).toBe('Our organisation');
   });
 
   it('handles missing required params with error', async () => {

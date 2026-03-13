@@ -9,6 +9,7 @@
 import { api } from '../api.js';
 import { writeCache, readCache } from '../cache.js';
 import { showToast } from './toast.js';
+import { computeWordDiff, renderDiff } from './diff.js';
 import type { Annotation, TextAnnotation, PageNote, ReviewStore, AgentReply, AnnotationStatus } from '../types.js';
 import { isTextAnnotation, getAnnotationStatus } from '../types.js';
 import type { OrphanState } from '../orphan-tracker.js';
@@ -371,7 +372,19 @@ function createTextAnnotationItem(annotation: TextAnnotation, callbacks: PanelCa
   item.setAttribute('data-air-el', 'annotation-item');
 
   if (status !== 'open') {
-    item.appendChild(createStatusBadge(status, annotation.inProgressAt, annotation.addressedAt));
+    const badgeRow = document.createElement('div');
+    badgeRow.style.cssText = 'display: flex; align-items: center;';
+    badgeRow.appendChild(createStatusBadge(status, annotation.inProgressAt, annotation.addressedAt));
+
+    if (status === 'addressed' && annotation.replacedText) {
+      const toggle = document.createElement('button');
+      toggle.className = 'air-diff-toggle';
+      toggle.setAttribute('data-air-el', 'diff-toggle');
+      toggle.textContent = '▶ Diff';
+      badgeRow.appendChild(toggle);
+    }
+
+    item.appendChild(badgeRow);
   }
 
   const text = document.createElement('div');
@@ -404,6 +417,34 @@ function createTextAnnotationItem(annotation: TextAnnotation, callbacks: PanelCa
     text.textContent = `"${truncated}"`;
   }
   item.appendChild(text);
+
+  // Collapsible word-level diff container (addressed annotations with replacedText only)
+  if (status === 'addressed' && annotation.replacedText) {
+    const diffContainer = document.createElement('div');
+    diffContainer.className = 'air-diff-container';
+    diffContainer.setAttribute('data-air-el', 'diff-container');
+    diffContainer.style.display = 'none';
+    item.appendChild(diffContainer);
+
+    // Wire up the toggle button
+    const toggle = item.querySelector('[data-air-el="diff-toggle"]') as HTMLButtonElement;
+    toggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isVisible = diffContainer.style.display !== 'none';
+      if (isVisible) {
+        diffContainer.style.display = 'none';
+        toggle.textContent = '▶ Diff';
+      } else {
+        // Populate diff on first open
+        if (diffContainer.children.length === 0) {
+          const segments = computeWordDiff(annotation.selectedText, annotation.replacedText!);
+          diffContainer.appendChild(renderDiff(segments));
+        }
+        diffContainer.style.display = 'block';
+        toggle.textContent = '▼ Diff';
+      }
+    });
+  }
 
   if (annotation.note) {
     const note = document.createElement('div');

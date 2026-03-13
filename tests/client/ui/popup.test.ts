@@ -594,4 +594,47 @@ describe('popup — addressed mode', () => {
 
     expect(isPopupVisible(popup)).toBe(true);
   });
+
+  it('shows diff container when replacedText is provided', () => {
+    showAddressedPopup(popup, '"hello world"', 'Fix greeting', rect, {
+      onAccept: vi.fn(),
+      onReopen: vi.fn(),
+      onCancel: vi.fn(),
+    }, undefined, 'hello everyone');
+
+    const diffEl = popup.container.querySelector('[data-air-el="popup-diff"]');
+    expect(diffEl).not.toBeNull();
+    expect(diffEl!.className).toBe('air-diff-container');
+
+    // Should contain diff segments (removed + added)
+    const removed = diffEl!.querySelector('.air-diff-removed');
+    const added = diffEl!.querySelector('.air-diff-added');
+    expect(removed).not.toBeNull();
+    expect(added).not.toBeNull();
+  });
+
+  it('does not show diff container when replacedText is not provided', () => {
+    showAddressedPopup(popup, '"hello world"', 'Fix greeting', rect, {
+      onAccept: vi.fn(),
+      onReopen: vi.fn(),
+      onCancel: vi.fn(),
+    });
+
+    const diffEl = popup.container.querySelector('[data-air-el="popup-diff"]');
+    expect(diffEl).toBeNull();
+  });
+
+  it('cleans up diff container on hidePopup', () => {
+    showAddressedPopup(popup, '"hello world"', 'Fix greeting', rect, {
+      onAccept: vi.fn(),
+      onReopen: vi.fn(),
+      onCancel: vi.fn(),
+    }, undefined, 'hello everyone');
+
+    expect(popup.container.querySelector('[data-air-el="popup-diff"]')).not.toBeNull();
+
+    hidePopup(popup);
+
+    expect(popup.container.querySelector('[data-air-el="popup-diff"]')).toBeNull();
+  });
 });

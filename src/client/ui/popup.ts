@@ -7,6 +7,7 @@
  */
 
 import type { AgentReply } from '../types.js';
+import { computeWordDiff, renderDiff } from './diff.js';
 
 export interface PopupCallbacks {
   onSave: (note: string) => void;
@@ -263,6 +264,7 @@ export function showAddressedPopup(
   rect: DOMRect,
   callbacks: AddressedCallbacks,
   latestReply?: AgentReply,
+  replacedText?: string,
 ): void {
   previouslyFocusedElement = document.activeElement as HTMLElement | null;
   const { container, textarea, selectedTextPreview } = popup;
@@ -276,7 +278,7 @@ export function showAddressedPopup(
 
   // Hide textarea, show read-only body
   textarea.style.display = 'none';
-  rebuildReadOnlyBody(container, note, '🔧 Addressed', 'addressed', latestReply);
+  rebuildReadOnlyBody(container, note, '🔧 Addressed', 'addressed', latestReply, replacedText);
 
   // Footer: Accept, Reopen, Cancel
   rebuildAddressedFooter(container, callbacks);
@@ -295,7 +297,7 @@ export function hidePopup(popup: PopupElements): void {
 
   // Clean up read-only elements added by status-aware modes
   popup.textarea.style.display = '';
-  for (const el of popup.container.querySelectorAll('[data-air-el="popup-note"], [data-air-el="popup-status-badge"], [data-air-el="popup-reply"], [data-air-el="popup-reopen-form"]')) {
+  for (const el of popup.container.querySelectorAll('[data-air-el="popup-note"], [data-air-el="popup-status-badge"], [data-air-el="popup-reply"], [data-air-el="popup-diff"], [data-air-el="popup-reopen-form"]')) {
     el.remove();
   }
 
@@ -399,9 +401,10 @@ function rebuildReadOnlyBody(
   badgeText: string,
   badgeType: 'in-progress' | 'addressed',
   latestReply?: AgentReply,
+  replacedText?: string,
 ): void {
   // Remove any previous read-only elements
-  for (const el of container.querySelectorAll('[data-air-el="popup-note"], [data-air-el="popup-status-badge"], [data-air-el="popup-reply"]')) {
+  for (const el of container.querySelectorAll('[data-air-el="popup-note"], [data-air-el="popup-status-badge"], [data-air-el="popup-reply"], [data-air-el="popup-diff"]')) {
     el.remove();
   }
 
@@ -415,6 +418,27 @@ function rebuildReadOnlyBody(
     : 'air-annotation-item__in-progress-badge';
   badge.textContent = badgeText;
   container.insertBefore(badge, footer);
+
+  // Inline diff (addressed annotations with replacedText only)
+  if (badgeType === 'addressed' && replacedText != null) {
+    // Extract original text from the preview element (strip surrounding quotes)
+    const previewEl = container.querySelector('.air-popup__selected');
+    let originalText = previewEl?.textContent ?? '';
+    if (originalText.startsWith('"') && originalText.endsWith('"')) {
+      originalText = originalText.slice(1, -1);
+    }
+    // Strip trailing ellipsis from truncation
+    if (originalText.endsWith('…')) {
+      originalText = originalText.slice(0, -1);
+    }
+
+    const diffContainer = document.createElement('div');
+    diffContainer.setAttribute('data-air-el', 'popup-diff');
+    diffContainer.className = 'air-diff-container';
+    const segments = computeWordDiff(originalText, replacedText);
+    diffContainer.appendChild(renderDiff(segments));
+    container.insertBefore(diffContainer, footer);
+  }
 
   // Read-only note
   const noteEl = document.createElement('div');
