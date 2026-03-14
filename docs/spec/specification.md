@@ -46,6 +46,8 @@ export default defineConfig({
 });
 ```
 
+**CI/CD consideration:** The static import above requires `review-loop` to be installed at build time. CI pipelines that use `npm ci --omit=dev` will not have the package available, causing the import to fail before the integration's dev-only guard (§ 2.4) can run. In these environments, use a dynamic import with a try/catch — see the README Troubleshooting section for the recommended pattern.
+
 ### 2.2 Configuration Options
 
 | Option | Type | Default | Description |

@@ -274,6 +274,72 @@ See [docs/spec/specification.md](docs/spec/specification.md) for the full compon
 - For Express: check that both `apiMiddleware` and `clientMiddleware` are registered, and the `<script>` tag is in your HTML
 - Check the browser console for errors
 
+### Build fails with `Cannot find module 'review-loop'`
+
+If your CI pipeline installs dependencies with `npm ci --omit=dev` (or `--production`), review-loop won't be present at build time. The static import in your config file fails before the integration's dev-only guard can run.
+
+The fix is a conditional dynamic import with a try/catch. The integration already no-ops during build, so the only purpose of the import is to make it available during `astro dev` / `vite dev`:
+
+<details open>
+<summary><strong>Astro</strong></summary>
+
+```javascript
+// astro.config.mjs
+import { defineConfig } from 'astro/config';
+
+const integrations = [];
+try {
+  const { default: inlineReview } = await import('review-loop');
+  integrations.push(inlineReview());
+} catch {}
+
+export default defineConfig({
+  integrations,
+});
+```
+
+</details>
+
+<details>
+<summary><strong>Vite</strong> (SvelteKit, Nuxt, Remix, etc.)</summary>
+
+```javascript
+// vite.config.js
+import { defineConfig } from 'vite';
+
+const plugins = [];
+try {
+  const { default: inlineReview } = await import('review-loop/vite');
+  plugins.push(inlineReview());
+} catch {}
+
+export default defineConfig({
+  plugins,
+});
+```
+
+</details>
+
+<details>
+<summary><strong>Express / Connect</strong></summary>
+
+```javascript
+import express from 'express';
+
+const app = express();
+
+try {
+  const { inlineReview } = await import('review-loop/express');
+  const { apiMiddleware, clientMiddleware } = inlineReview();
+  app.use(apiMiddleware);
+  app.use(clientMiddleware);
+} catch {}
+```
+
+</details>
+
+If your CI installs all dependencies (including devDependencies), the simple static import from the [Quickstart](#2-add-the-integration) works fine — no conditional needed.
+
 ### Common environment issues
 
 - **Node version**: requires >= 20. Check with `node --version`
