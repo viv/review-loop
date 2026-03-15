@@ -34,17 +34,6 @@ Human reviewer                    AI coding agent
 7. Confirm or re-annotate
 ```
 
-## Why MCP-First
-
-The [Model Context Protocol](https://modelcontextprotocol.io) (MCP) is the primary integration path. MCP lets your coding agent connect to the annotation store and work through feedback autonomously:
-
-- **No copy-paste** — the agent reads annotations directly from `inline-review.json`
-- **Rich context** — each annotation carries the page URL, exact text, XPath ranges, and surrounding context
-- **Closed loop** — the agent marks annotations as addressed, adds reply messages, and updates replaced text — the reviewer sees all of this in the browser panel
-- **Status lifecycle** — annotations progress through `open` → `in_progress` (agent working) → `addressed` (agent acted). Reviewers then Accept (delete) or Reopen with follow-up notes
-
-A secondary **Markdown export** is also available for agents that don't support MCP, or for sharing feedback outside agent workflows. See [Markdown Export](#markdown-export).
-
 ## Quickstart
 
 **Prerequisites:** Node.js >= 20 and an MCP-compatible coding agent (Claude Code, Cursor, Windsurf, etc.)
@@ -84,8 +73,6 @@ export default defineConfig({
   plugins: [inlineReview()],
 });
 ```
-
-The Vite plugin uses `transformIndexHtml` to inject the client script automatically.
 
 </details>
 
@@ -188,6 +175,17 @@ Shortcuts are suppressed when focus is in an input, textarea, or contentEditable
 - **Multi-page.** Annotations are scoped by URL but viewable across all pages.
 - **Shadow DOM isolation.** All UI is isolated from your site's styles.
 
+## Why MCP-First
+
+The [Model Context Protocol](https://modelcontextprotocol.io) (MCP) is the primary integration path. MCP lets your coding agent connect to the annotation store and work through feedback autonomously:
+
+- **No copy-paste** — the agent reads annotations directly from `inline-review.json`
+- **Rich context** — each annotation carries the page URL, exact text, XPath ranges, and surrounding context
+- **Closed loop** — the agent marks annotations as addressed, adds reply messages, and updates replaced text — the reviewer sees all of this in the browser panel
+- **Status lifecycle** — annotations progress through `open` → `in_progress` (agent working) → `addressed` (agent acted). Reviewers then Accept (delete) or Reopen with follow-up notes
+
+A secondary **Markdown export** is also available for agents that don't support MCP, or for sharing feedback outside agent workflows. See [Markdown Export](#markdown-export).
+
 ## MCP Server
 
 The MCP server lets coding agents read and respond to annotations directly — no dev server required. Setup is covered in [Quickstart step 3](#3-connect-your-agent-via-mcp).
@@ -197,7 +195,7 @@ For MCP clients other than Claude Code, configure the stdio transport manually:
 - **Command**: `node`
 - **Arguments**: `["./node_modules/review-loop/dist/mcp/server.js", "--storage", "./inline-review.json"]`
 - **Transport**: stdio
-- **Working directory**: your Astro project root
+- **Working directory**: your project root
 
 ### Available tools
 
@@ -278,7 +276,7 @@ See [docs/spec/specification.md](docs/spec/specification.md) for the full compon
 
 If your CI pipeline installs dependencies with `npm ci --omit=dev` (or `--production`), review-loop won't be present at build time. The static import in your config file fails before the integration's dev-only guard can run.
 
-The fix is a conditional dynamic import with a try/catch. The integration already no-ops during build, so the only purpose of the import is to make it available during `astro dev` / `vite dev`:
+The fix is a conditional dynamic import with a try/catch. The Astro and Vite adapters already no-op during build, so the only purpose of the import is to make review-loop available during development:
 
 <details open>
 <summary><strong>Astro</strong></summary>
