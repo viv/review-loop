@@ -148,6 +148,7 @@ export function createPanel(
 
   // State
   let activeTab: ActiveTab = 'this-page';
+  let pendingPanelRefresh = false;
 
   thisPageTab.addEventListener('click', () => {
     activeTab = 'this-page';
@@ -176,8 +177,16 @@ export function createPanel(
 
   const elements: PanelElements = { container, thisPageTab, allPagesTab, content, addNoteBtn, mediator };
 
-  // Wire up mediator so other modules can trigger a panel refresh
+  // Wire up mediator so other modules can trigger a panel refresh.
+  // Defer the refresh when the user has an open form (reopen / page-note)
+  // to avoid destroying their in-progress input — mirrors the popup's
+  // deferred-update pattern.
   mediator.refreshPanel = async () => {
+    if (hasPanelActiveForm(content)) {
+      pendingPanelRefresh = true;
+      return;
+    }
+    pendingPanelRefresh = false;
     try {
       const store = await api.getStore();
       refreshPanel(content, activeTab, callbacks, mediator, store);
@@ -217,6 +226,11 @@ export function isPanelOpen(panel: PanelElements): boolean {
 export function closePanel(panel: PanelElements): void {
   panel.container.classList.remove('air-panel--open');
   panel.container.setAttribute('data-air-state', 'closed');
+}
+
+/** Check whether the panel content area contains an open form (reopen or page-note). */
+function hasPanelActiveForm(content: HTMLDivElement): boolean {
+  return content.querySelector('.air-reopen-form, .air-note-form') !== null;
 }
 
 // --- Internal ---
@@ -282,7 +296,7 @@ function renderThisPage(
     content.appendChild(annotationsHeader);
 
     for (const annotation of pageAnnotations) {
-      content.appendChild(createAnnotationItem(annotation, callbacks));
+      content.appendChild(createAnnotationItem(annotation, callbacks, mediator));
     }
   }
 
@@ -347,19 +361,19 @@ function renderAllPages(
     }
 
     for (const annotation of page.annotations) {
-      content.appendChild(createAnnotationItem(annotation, callbacks));
+      content.appendChild(createAnnotationItem(annotation, callbacks, mediator));
     }
   }
 }
 
-function createAnnotationItem(annotation: Annotation, callbacks: PanelCallbacks): HTMLDivElement {
+function createAnnotationItem(annotation: Annotation, callbacks: PanelCallbacks, mediator: ReviewMediator): HTMLDivElement {
   if (isTextAnnotation(annotation)) {
-    return createTextAnnotationItem(annotation, callbacks);
+    return createTextAnnotationItem(annotation, callbacks, mediator);
   }
-  return createElementAnnotationItem(annotation, callbacks);
+  return createElementAnnotationItem(annotation, callbacks, mediator);
 }
 
-function createTextAnnotationItem(annotation: TextAnnotation, callbacks: PanelCallbacks): HTMLDivElement {
+function createTextAnnotationItem(annotation: TextAnnotation, callbacks: PanelCallbacks, mediator: ReviewMediator): HTMLDivElement {
   const item = document.createElement('div');
   const status = getAnnotationStatus(annotation);
   const orphanState = callbacks.getOrphanState(annotation.id, annotation.pageUrl, status);
@@ -477,7 +491,7 @@ function createTextAnnotationItem(annotation: TextAnnotation, callbacks: PanelCa
     const actions = document.createElement('div');
     actions.style.cssText = 'display: flex; gap: 8px; margin-top: 8px;';
 
-    appendStatusActions(actions, annotation.id, status, callbacks, item);
+    appendStatusActions(actions, annotation.id, status, callbacks, item, mediator);
 
     if (status === 'open') {
       const deleteBtn = createDeleteButton(annotation.id, callbacks);
@@ -501,7 +515,7 @@ function createTextAnnotationItem(annotation: TextAnnotation, callbacks: PanelCa
   return item;
 }
 
-function createElementAnnotationItem(annotation: Annotation & { type: 'element' }, callbacks: PanelCallbacks): HTMLDivElement {
+function createElementAnnotationItem(annotation: Annotation & { type: 'element' }, callbacks: PanelCallbacks, mediator: ReviewMediator): HTMLDivElement {
   const item = document.createElement('div');
   const status = getAnnotationStatus(annotation);
   const orphanState = callbacks.getOrphanState(annotation.id, annotation.pageUrl, status);
@@ -553,7 +567,7 @@ function createElementAnnotationItem(annotation: Annotation & { type: 'element' 
     const actions = document.createElement('div');
     actions.style.cssText = 'display: flex; gap: 8px; margin-top: 8px;';
 
-    appendStatusActions(actions, annotation.id, status, callbacks, item);
+    appendStatusActions(actions, annotation.id, status, callbacks, item, mediator);
 
     if (status === 'open') {
       const deleteBtn = createDeleteButton(annotation.id, callbacks);
@@ -631,6 +645,7 @@ function showAddNoteForm(content: HTMLDivElement, callbacks: PanelCallbacks, med
   const existing = content.querySelector('.air-note-form');
   if (existing) {
     existing.remove();
+    mediator.refreshPanel(); // Flush any deferred refresh
     return; // Toggle off
   }
 
@@ -656,6 +671,7 @@ function showAddNoteForm(content: HTMLDivElement, callbacks: PanelCallbacks, med
     }
   }, () => {
     form.remove();
+    mediator.refreshPanel(); // Flush any deferred refresh
   });
 
   content.insertBefore(form, content.firstChild);
@@ -673,6 +689,7 @@ function showEditNoteForm(
 
     try {
       await api.updatePageNote(note.id, { note: noteText.trim() });
+      form.remove();
       await callbacks.onRefreshBadge();
       mediator.refreshPanel();
     } catch (err) {
@@ -682,6 +699,7 @@ function showEditNoteForm(
     }
   }, () => {
     // Cancel — just restore the item
+    form.remove();
     mediator.refreshPanel();
   });
 
@@ -773,6 +791,7 @@ function appendStatusActions(
   status: AnnotationStatus,
   callbacks: PanelCallbacks,
   item: HTMLElement,
+  mediator: ReviewMediator,
 ): void {
   if (status === 'addressed') {
     const acceptBtn = document.createElement('button');
@@ -795,7 +814,7 @@ function appendStatusActions(
     reopenBtn.style.fontSize = '11px';
     reopenBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      showReopenForm(item, annotationId, callbacks);
+      showReopenForm(item, annotationId, callbacks, mediator);
     });
     container.appendChild(reopenBtn);
   }
@@ -806,6 +825,7 @@ function showReopenForm(
   item: HTMLElement,
   annotationId: string,
   callbacks: PanelCallbacks,
+  mediator: ReviewMediator,
 ): void {
   // Don't show multiple forms
   if (item.querySelector('.air-reopen-form')) return;
@@ -832,6 +852,7 @@ function showReopenForm(
   cancelBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     form.remove();
+    mediator.refreshPanel(); // Flush any deferred refresh
   });
   footer.appendChild(cancelBtn);
 
