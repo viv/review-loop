@@ -148,7 +148,6 @@ export function createPanel(
 
   // State
   let activeTab: ActiveTab = 'this-page';
-  let pendingPanelRefresh = false;
 
   thisPageTab.addEventListener('click', () => {
     activeTab = 'this-page';
@@ -183,10 +182,8 @@ export function createPanel(
   // deferred-update pattern.
   mediator.refreshPanel = async () => {
     if (hasPanelActiveForm(content)) {
-      pendingPanelRefresh = true;
       return;
     }
-    pendingPanelRefresh = false;
     try {
       const store = await api.getStore();
       refreshPanel(content, activeTab, callbacks, mediator, store);
