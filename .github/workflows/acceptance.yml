@@ -21,12 +21,12 @@ jobs:
 
     steps:
       - name: Checkout main repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           path: review-loop
 
       - name: Checkout test suite
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: viv/review-loop-tests
           path: review-loop-tests
