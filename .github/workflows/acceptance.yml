@@ -31,7 +31,7 @@ jobs:
           repository: viv/review-loop-tests
           path: review-loop-tests
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
